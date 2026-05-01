@@ -17,10 +17,17 @@ function init() {
     renderStep();
 }
 
-function renderStep() {
+async function renderStep() {
     isProcessing = false;
     const step = STEPS[currentStepIndex];
     
+    // Clear Simulation Log with fade out
+    const cards = simulationLog.querySelectorAll('.step-card, .recap-card');
+    for (const card of cards) {
+        await anim.fadeOut(card);
+    }
+    simulationLog.innerHTML = `<div class="empty-state"><i class="fas fa-route"></i><p>Simulating step ${currentStepIndex + 1}...</p></div>`;
+
     // Update headers
     scenarioTitle.innerText = `Step ${currentStepIndex + 1}: ${step.title}`;
     scenarioText.innerText = step.question;
@@ -42,14 +49,12 @@ function renderStep() {
         btn.onclick = () => handleChoice(opt, btn);
         optionsContainer.appendChild(btn);
     });
-
-    // Fade in new step elements
-    anim.fadeIn(document.getElementById("quiz-card"), 0);
-    anim.fadeIn(document.getElementById("mentor-box"), 100);
 }
 
 async function handleChoice(option, btn) {
     if (isProcessing) return;
+    
+    const buttons = optionsContainer.querySelectorAll(".option-btn");
     
     if (option.correct) {
         isProcessing = true;
@@ -58,7 +63,6 @@ async function handleChoice(option, btn) {
         btn.innerHTML = `<i class="fas fa-check-circle"></i> ${option.text}`;
         
         // Disable other buttons
-        const buttons = optionsContainer.querySelectorAll(".option-btn");
         buttons.forEach(b => {
             if (b !== btn) b.style.opacity = "0.5";
             b.disabled = true;
@@ -67,8 +71,8 @@ async function handleChoice(option, btn) {
         feedbackMessage.innerText = option.feedback;
         feedbackMessage.className = "feedback-message success";
 
-        // Trigger Mini Simulation
-        await runMiniSimulation(STEPS[currentStepIndex].simulation);
+        // Trigger Success Simulation
+        await runSimulation(option.simulation, true);
 
         // Show AI Recap
         await showRecap(STEPS[currentStepIndex].recap);
@@ -81,18 +85,27 @@ async function handleChoice(option, btn) {
             } else {
                 showFinalSuccess();
             }
-        }, 2000);
+        }, 1500);
 
     } else {
+        isProcessing = true; // Block clicks during failure simulation
         anim.shake(btn);
         btn.classList.add('wrong');
         btn.innerHTML = `<i class="fas fa-times-circle"></i> ${option.text}`;
         
-        feedbackMessage.innerText = "🤔 Let me explain why...";
+        // Disable other buttons temporarily
+        buttons.forEach(b => b.disabled = true);
+
+        feedbackMessage.innerText = "⚠️ Path rejected. Watching failure simulation...";
         feedbackMessage.className = "feedback-message thinking";
 
+        // Trigger Failure Simulation
+        await runSimulation(option.simulation, false);
+
+        // Show AI explanation for failure
+        feedbackMessage.innerText = "🤔 Explaining the consequence...";
         try {
-            const explanation = await getExplain(`Explain why '${option.text}' is the wrong choice for: ${STEPS[currentStepIndex].question}`);
+            const explanation = await getExplain(`Explain why '${option.text}' is the wrong choice for: ${STEPS[currentStepIndex].question}. Consequence: ${option.feedback}`);
             feedbackMessage.innerText = `❌ ${explanation[0] || option.feedback}`;
             feedbackMessage.className = "feedback-message error";
         } catch (e) {
@@ -100,44 +113,56 @@ async function handleChoice(option, btn) {
             feedbackMessage.className = "feedback-message error";
         }
 
-        // Reset icon after a while if they want to retry
+        // Allow retry
         setTimeout(() => {
-            if (!isProcessing) {
-                btn.classList.remove('wrong');
-                btn.innerHTML = `<i class="far fa-circle"></i> ${option.text}`;
-            }
-        }, 2000);
+            isProcessing = false;
+            btn.classList.remove('wrong');
+            btn.innerHTML = `<i class="far fa-circle"></i> ${option.text}`;
+            buttons.forEach(b => {
+                b.disabled = false;
+                b.style.opacity = "1";
+            });
+        }, 3000);
     }
 }
 
-async function runMiniSimulation(steps) {
-    // Clear previous or empty state
-    const empty = simulationLog.querySelector(".empty-state");
-    if (empty) empty.remove();
+async function runSimulation(steps, isSuccess) {
+    simulationLog.innerHTML = "";
 
     for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const animationType = anim.getAnimationType(step.text);
+        
         const card = document.createElement("div");
-        card.className = "step-card";
+        card.className = `step-card anim-${animationType} ${isSuccess ? '' : 'failure'}`;
+        
+        let visualElement = '';
+        if (animationType === 'download') {
+            visualElement = '<div class="sim-progress-bar"><div class="sim-progress-fill"></div></div>';
+        } else if (animationType === 'spinner') {
+            visualElement = `<i class="fas fa-circle-notch fa-spin sim-spinner ${isSuccess ? '' : 'error'}"></i>`;
+        }
+
         card.innerHTML = `
-            <div class="step-header">
-                <i class="fas fa-sync fa-spin"></i>
-                <span>ACTING...</span>
+            <div class="step-header ${isSuccess ? '' : 'error'}">
+                <i class="fas ${isSuccess ? (animationType === 'success-check' ? 'fa-check-circle' : 'fa-cog fa-spin') : 'fa-exclamation-triangle'}"></i>
+                <span>${isSuccess ? animationType.toUpperCase() : 'FAILURE ALERT'}</span>
             </div>
-            <div class="step-content">${steps[i]}</div>
+            <div class="step-main-text">${step.text}</div>
+            <div class="step-sub-text">${step.sub}</div>
+            ${visualElement}
         `;
+        
         simulationLog.appendChild(card);
         anim.fadeIn(card, 0);
         
-        // After small delay, change icon to check
-        setTimeout(() => {
-            const icon = card.querySelector("i");
-            icon.className = "fas fa-check-circle";
-            icon.style.color = "var(--success)";
-            card.querySelector("span").innerText = "COMPLETED";
-        }, 600);
+        if (!isSuccess && i === steps.length - 1) {
+            card.style.borderLeftColor = "var(--error)";
+            card.style.background = "rgba(244, 63, 94, 0.05)";
+        }
 
         simulationLog.scrollTop = simulationLog.scrollHeight;
-        await delay(1000);
+        await delay(1200);
     }
 }
 
@@ -154,7 +179,7 @@ function showFinalSuccess() {
     progressBar.style.width = "100%";
     anim.clearContainer(optionsContainer);
     scenarioTitle.innerText = "Journey Complete! 🎓";
-    scenarioText.innerText = "You've mastered the essentials of the Indian Election Process. You're now ready to be an informed and active citizen.";
+    scenarioText.innerText = "You've mastered the essentials of the Indian Election Process.";
     
     document.getElementById("mentor-box").style.display = "none";
     feedbackMessage.innerText = "Excellent progress. You've completed all modules.";

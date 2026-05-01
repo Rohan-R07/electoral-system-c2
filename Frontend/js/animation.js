@@ -1,21 +1,21 @@
 export function shake(element) {
-    element.classList.add('wrong');
+    element.classList.add('wrong-shake');
     setTimeout(() => {
-        element.classList.remove('wrong');
+        element.classList.remove('wrong-shake');
     }, 400);
 }
 
 export function pop(element) {
-    element.classList.add('correct');
+    element.classList.add('correct-pop');
     setTimeout(() => {
-        element.classList.remove('correct');
+        element.classList.remove('correct-pop');
     }, 400);
 }
 
 export function fadeIn(element, delay = 0) {
     element.style.opacity = '0';
+    element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
     element.style.transform = 'translateY(10px)';
-    element.style.transition = 'all 0.5s ease';
     
     setTimeout(() => {
         element.style.opacity = '1';

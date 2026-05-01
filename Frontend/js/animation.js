@@ -34,6 +34,24 @@ export function fadeOut(element) {
     });
 }
 
+export function typeText(element, text, speed = 30) {
+    return new Promise(resolve => {
+        element.innerText = "";
+        element.classList.add('typing');
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < text.length) {
+                element.innerText += text.charAt(i);
+                i++;
+            } else {
+                clearInterval(interval);
+                element.classList.remove('typing');
+                resolve();
+            }
+        }, speed);
+    });
+}
+
 export function getAnimationType(text) {
     const t = text.toLowerCase();
     if (t.includes("downloading")) return "download";

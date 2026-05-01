@@ -1,227 +1,152 @@
-export const STEPS = [
+export const STEP_POOL = [
     {
         id: 1,
         title: "Eligibility Check",
-        questionVariants: [
-            "What is the primary requirement to be a voter in India?",
-            "At what age does a citizen become eligible to vote in Indian elections?",
-            "Which of these is the most important criteria for being registered as a voter?"
-        ],
-        hintVariants: [
-            "Age is just a number, but for voting, it's exactly 18!",
-            "It follows the principle of Universal Adult Suffrage.",
-            "You need to reach the legal age of majority first."
-        ],
-        options: [
-            { 
-                textVariants: ["Being at least 18 years old", "Reaching the age of 18", "Being 18+ years of age"],
-                correct: true, 
-                feedback: "Correct! Article 326 of the Constitution defines this as the age of majority for voting.",
+        questionSets: [
+            {
+                question: "You want to participate in the upcoming elections. What is the primary requirement to be a voter in India?",
+                hint: "Age is just a number, but for voting, it's a specific one! It follows the principle of Universal Adult Suffrage.",
+                options: [
+                    { text: "Being at least 18 years old", correct: true, feedback: "Correct! Article 326 of the Constitution defines this as the age of majority for voting." },
+                    { text: "Having a college degree", correct: false, feedback: "Incorrect. Education is not a requirement for voting rights in India." },
+                    { text: "Paying income tax", correct: false, feedback: "Wrong. Voting is a right for every citizen, regardless of their financial status." }
+                ],
                 simulation: [
                     { text: "Verifying citizenship records...", sub: "Cross-referencing with national database." },
                     { text: "Checking date of birth...", sub: "Calculating age from official records." },
-                    { text: "Validation Successful", sub: "Status: ELIGIBLE TO REGISTER" }
-                ]
+                    { text: "Validation Successful", sub: "Status: ELIGIBLE" }
+                ],
+                recap: "You've successfully verified your eligibility. In India, any citizen aged 18 or above can participate."
             },
-            { 
-                textVariants: ["Having a college degree", "Completing graduation", "Educational qualifications"],
-                correct: false, 
-                feedback: "Incorrect. Education is not a requirement for voting rights in India.",
+            {
+                question: "You reached the polling booth but your name is not on the list. Which criteria should you have checked earlier?",
+                hint: "Eligibility is more than just age; you must be present on the 'Electoral Roll'.",
+                options: [
+                    { text: "Inclusion in the Electoral Roll", correct: true, feedback: "Exactly! You must be registered in the electoral roll of your constituency." },
+                    { text: "Your social media follower count", correct: false, feedback: "Wrong. Digital popularity has no impact on voting rights." },
+                    { text: "The color of your ink", correct: false, feedback: "No. Ink is applied AFTER you are verified on the list." }
+                ],
                 simulation: [
-                    { text: "Scanning Educational Database...", sub: "Checking for degree credentials." },
-                    { text: "❌ Access Denied", sub: "Requirement: Age, not Education." }
-                ]
-            },
-            { 
-                textVariants: ["Paying income tax", "Being a taxpayer", "Financial contribution to govt"],
-                correct: false, 
-                feedback: "Wrong. Voting is a right for every citizen, regardless of their financial status.",
-                simulation: [
-                    { text: "Checking IT Department records...", sub: "Looking for tax history." },
-                    { text: "❌ Process Halted", sub: "Voting is a right, not a paid privilege." }
-                ]
+                    { text: "Searching Electoral Roll...", sub: "Querying EPIC database for your name." },
+                    { text: "Entry Found: Ward 12", sub: "Name is correctly listed in the constituency." },
+                    { text: "✅ Enrollment Confirmed", sub: "You are ready to proceed." }
+                ],
+                recap: "Being 18 is the first step, but being on the list (Electoral Roll) is what grants you the actual vote."
             }
-        ],
-        recap: "You've successfully verified your eligibility. In India, any citizen aged 18 or above can participate."
+        ]
     },
     {
         id: 2,
         title: "Registration Method",
-        questionVariants: [
-            "How will you register yourself in the electoral roll?",
-            "What is the best modern way to apply for a voter ID?",
-            "Which platform should a new voter use for registration?"
-        ],
-        hintVariants: [
-            "Digital India has made this very easy from your smartphone!",
-            "Look for the official app provided by the Election Commission.",
-            "Avoid unofficial channels; stick to the government's digital portal."
-        ],
-        options: [
-            { 
-                textVariants: ["Voter Helpline App", "Download official VHA app", "Use the ECI mobile portal"],
-                correct: true, 
-                feedback: "Perfect! The ECI's mobile app is the most convenient way to register.",
+        questionSets: [
+            {
+                question: "How will you register yourself in the electoral roll in the modern 'Digital India' era?",
+                hint: "Digital India has made this very easy from your smartphone!",
+                options: [
+                    { text: "Voter Helpline App", correct: true, feedback: "Perfect! The ECI's mobile app is the most convenient way to register." },
+                    { text: "Post a letter to the Prime Minister", correct: false, feedback: "Incorrect. Registration must be done through official ECI channels." },
+                    { text: "Visit a local police station", correct: false, feedback: "Wrong. Police stations do not handle voter registration." }
+                ],
                 simulation: [
                     { text: "Downloading Voter Helpline App...", sub: "Fetching official app from Store." },
                     { text: "Launching Application...", sub: "Initializing secure registration module." },
-                    { text: "✅ App Ready", sub: "Proceeding to Form 6." }
-                ]
+                    { text: "✅ App Ready", sub: "Proceeding to registration portal." }
+                ],
+                recap: "Using the official app ensures your data goes directly to the Election Commission for processing."
             },
-            { 
-                textVariants: ["Send a WhatsApp message", "WhatsApp the PMO", "Text your local representative"],
-                correct: false, 
-                feedback: "Incorrect. WhatsApp is not an official registration channel.",
+            {
+                question: "If you don't have a smartphone, where can you go physically to register as a voter?",
+                hint: "There is a specific officer in every constituency in charge of the rolls.",
+                options: [
+                    { text: "Office of the ERO", correct: true, feedback: "Correct! The Electoral Registration Officer (ERO) handles physical applications." },
+                    { text: "The nearest Post Office", correct: false, feedback: "Not quite. While they have forms sometimes, they don't process them." },
+                    { text: "The local grocery store", correct: false, feedback: "No. Only official government offices handle voter rolls." }
+                ],
                 simulation: [
-                    { text: "Opening WhatsApp...", sub: "Attempting to send a message." },
-                    { text: "❌ No Action", sub: "Official registration must use ECI portals." }
-                ]
-            },
-            { 
-                textVariants: ["Visit a local police station", "Go to the police station", "Report to nearest PS"],
-                correct: false, 
-                feedback: "Wrong. Police stations do not handle voter registration.",
-                simulation: [
-                    { text: "Navigating to Police Station...", sub: "Walking to the nearest station." },
-                    { text: "❌ Redirected", sub: "Officer directs you to the ERO office or Online Portal." }
-                ]
+                    { text: "Navigating to ERO Office...", sub: "Locating the nearest government administrative building." },
+                    { text: "Meeting Booth Level Officer...", sub: "Inquiring about physical Form 6 availability." },
+                    { text: "✅ Location Reached", sub: "Starting physical application process." }
+                ],
+                recap: "Whether online or offline, the ECI provides multiple paths to ensure no citizen is left behind."
             }
-        ],
-        recap: "Using the official app ensures your data goes directly to the Election Commission for processing."
+        ]
     },
     {
         id: 3,
         title: "Form Selection",
-        questionVariants: [
-            "Which form should you fill out as a first-time voter?",
-            "Select the correct form for new registration.",
-            "As a new elector, which document must you initialize?"
-        ],
-        hintVariants: [
-            "Look for the primary form for 'New Voter Registration'.",
-            "It's the very first form in the registration list.",
-            "Form numbers vary by purpose; this one is for 'Addition' to the roll."
-        ],
-        options: [
-            { 
-                textVariants: ["Form 6", "Apply via Form 6", "Select Form 6"],
-                correct: true, 
-                feedback: "Correct! Form 6 is for first-time voter registration.",
+        questionSets: [
+            {
+                question: "You are registering for the first time. Which form should you fill out?",
+                hint: "Look for the primary form for 'New Voter Registration'.",
+                options: [
+                    { text: "Form 6", correct: true, feedback: "Correct! Form 6 is for first-time voter registration." },
+                    { text: "Form 7", correct: false, feedback: "Incorrect. Form 7 is for deletion or objection of names." },
+                    { text: "Form 8", correct: false, feedback: "No. Form 8 is for correction of existing entries." }
+                ],
                 simulation: [
                     { text: "Opening Form 6...", sub: "Loading first-time registration form." },
                     { text: "Verifying Mobile Number...", sub: "Sending secure OTP." },
-                    { text: "✅ Initialized", sub: "Ready for document upload." }
-                ]
+                    { text: "✅ Initialized", sub: "Ready for data entry." }
+                ],
+                recap: "Selecting the right form is crucial. Form 6 is your gateway to becoming a registered voter."
             },
-            { 
-                textVariants: ["Form 7", "Fill Form 7", "Choose Form 7"],
-                correct: false, 
-                feedback: "Incorrect. Form 7 is for deletion or objection of names.",
+            {
+                question: "You have moved to a new city and need to transfer your vote. Which form is used for correction or shifting?",
+                hint: "This form is for when you are ALREADY a voter but your details need to change.",
+                options: [
+                    { text: "Form 8", correct: true, feedback: "Exactly! Form 8 is used for shifting of residence or correction of particulars." },
+                    { text: "Form 6", correct: false, feedback: "No. Form 6 is only for brand new voters." },
+                    { text: "Form 10", correct: false, feedback: "Wrong. Form 10 is not related to voter registration." }
+                ],
                 simulation: [
-                    { text: "Opening Form 7...", sub: "Loading deletion form." },
-                    { text: "❌ Logic Error", sub: "You want to ADD a name, not delete one." }
-                ]
-            },
-            { 
-                textVariants: ["Form 8", "Navigate to Form 8", "Start Form 8"],
-                correct: false, 
-                feedback: "No. Form 8 is for correction of existing entries.",
-                simulation: [
-                    { text: "Opening Form 8...", sub: "Loading correction form." },
-                    { text: "❌ Name Not Found", sub: "You must use Form 6 for initial registration." }
-                ]
+                    { text: "Opening Form 8...", sub: "Accessing correction and shifting module." },
+                    { text: "Searching existing EPIC ID...", sub: "Locating your old voter records." },
+                    { text: "✅ Records Found", sub: "Updating address to current constituency." }
+                ],
+                recap: "Maintaining an accurate address in the roll ensures you can vote at the booth nearest to your home."
             }
-        ],
-        recap: "Selecting the right form is crucial. Form 6 is your gateway to becoming a registered voter."
+        ]
     },
     {
         id: 4,
         title: "Document Verification",
-        questionVariants: [
-            "Which of these is a valid 'Proof of Age'?",
-            "What document can you upload to verify your date of birth?",
-            "Select an accepted document for age verification."
-        ],
-        hintVariants: [
-            "You need a government-issued document stating your DOB.",
-            "Aadhaar or Birth Certificate are the standard choices.",
-            "Think of a document that officially records your entry into this world."
-        ],
-        options: [
-            { 
-                textVariants: ["Birth Certificate or Aadhaar Card", "Aadhaar Card / Birth Certificate", "Official Govt ID with DOB"],
-                correct: true, 
-                feedback: "Spot on! These are standard accepted documents for age proof.",
+        questionSets: [
+            {
+                question: "Which of these is a valid 'Proof of Age' for registration?",
+                hint: "You need a government-issued document that clearly states your date of birth.",
+                options: [
+                    { text: "Birth Certificate or Aadhaar", correct: true, feedback: "Spot on! These are standard accepted documents for age proof." },
+                    { text: "Library Membership Card", correct: false, feedback: "No. A library card is not an official government ID for age proof." },
+                    { text: "School Playground Pass", correct: false, feedback: "Wrong. This has no legal standing for age verification." }
+                ],
                 simulation: [
                     { text: "Scanning Identity Card...", sub: "Extracting DOB information." },
                     { text: "Uploading to Server...", sub: "Securely storing document." },
                     { text: "✅ Verified", sub: "Age criteria satisfied." }
-                ]
-            },
-            { 
-                textVariants: ["Library Membership Card", "School Library Card", "Private Membership ID"],
-                correct: false, 
-                feedback: "No. A library card is not an official government ID for age proof.",
-                simulation: [
-                    { text: "Scanning Library Card...", sub: "Checking for official seal." },
-                    { text: "❌ Rejected", sub: "Document is not government-issued." }
-                ]
-            },
-            { 
-                textVariants: ["Electricity Bill", "Utility / Electric Bill", "Proof of Residence (Bill)"],
-                correct: false, 
-                feedback: "Wrong. An electricity bill is typically used as proof of residence.",
-                simulation: [
-                    { text: "Scanning Utility Bill...", sub: "Checking for DOB records." },
-                    { text: "❌ Invalid", sub: "Bill only proves residence, not age." }
-                ]
+                ],
+                recap: "Digital documentation speeds up the verification process. Always ensure your uploads are clear."
             }
-        ],
-        recap: "Digital documentation speeds up the verification process. Always ensure your uploads are clear."
+        ]
     },
     {
         id: 5,
         title: "Final Step: Voting",
-        questionVariants: [
-            "What is the last thing you do after pressing the EVM button?",
-            "How do you confirm your vote has been recorded correctly?",
-            "What should you check before leaving the polling compartment?"
-        ],
-        hintVariants: [
-            "The VVPAT machine next to the EVM is there for a reason.",
-            "Look for the paper trail confirmation.",
-            "A small slip appears for 7 seconds—make sure it's correct."
-        ],
-        options: [
-            { 
-                textVariants: ["Check the VVPAT slip", "Verify VVPAT window", "Wait for VVPAT confirmation"],
-                correct: true, 
-                feedback: "Excellent! The VVPAT allows you to verify that your vote was cast correctly.",
+        questionSets: [
+            {
+                question: "What is the last thing you do after pressing the EVM button?",
+                hint: "The VVPAT machine next to the EVM is there for a reason.",
+                options: [
+                    { text: "Check the VVPAT slip", correct: true, feedback: "Excellent! The VVPAT allows you to verify that your vote was cast correctly." },
+                    { text: "Take a selfie with the machine", correct: false, feedback: "Absolutely not! Photography is strictly prohibited." },
+                    { text: "Ask the officer who to vote for", correct: false, feedback: "No. It is your private choice." }
+                ],
                 simulation: [
                     { text: "Pressing EVM Button...", sub: "Recording vote for candidate." },
                     { text: "Verifying VVPAT Screen...", sub: "Confirming symbol on paper slip." },
                     { text: "✅ Vote Casted", sub: "Participation complete." }
-                ]
-            },
-            { 
-                textVariants: ["Take a selfie with the machine", "Snap a photo of the EVM", "Capture the moment on phone"],
-                correct: false, 
-                feedback: "Absolutely not! Photography is strictly prohibited.",
-                simulation: [
-                    { text: "Taking Phone Out...", sub: "Attempting to snap a selfie." },
-                    { text: "❌ Confiscated", sub: "Devices not allowed. Vote invalidated." }
-                ]
-            },
-            { 
-                textVariants: ["Walk out before the beep", "Exit immediately", "Leave without waiting"],
-                correct: false, 
-                feedback: "No. You must ensure the vote is registered.",
-                simulation: [
-                    { text: "Walking out quickly...", sub: "Exiting prematurely." },
-                    { text: "❌ Incomplete", sub: "System did not register the 'BEEP'." }
-                ]
+                ],
+                recap: "Congratulations! You have successfully exercised your most powerful right in a democracy."
             }
-        ],
-        recap: "Congratulations! You have successfully navigated the journey of a voter."
+        ]
     }
 ];

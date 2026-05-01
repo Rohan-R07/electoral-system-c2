@@ -3,63 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="An interactive AI assistant to help you learn the election process in India.">
     <title>Election Learning Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-    <div class="app-container">
+    <div class="app-container" role="main">
         
         <!-- LEFT: CHOICES -->
-        <aside class="sidebar choices-panel">
-            <div class="panel-header">
-                <i class="fas fa-route"></i>
+        <aside class="sidebar choices-panel" aria-label="Journey Progress and Choices">
+            <div class="panel-header" role="banner">
+                <i class="fas fa-route" aria-hidden="true"></i>
                 <h2>Your Journey</h2>
             </div>
             
             <div class="quiz-container">
-                <div class="progress-container">
+                <div class="progress-container" aria-label="Step Progress">
                     <div class="progress-bar">
-                        <div id="progress" class="progress" style="width: 0%"></div>
+                        <div id="progress" class="progress" style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
 
-                <div id="mentor-box" class="mentor-box">
-                    <div class="mentor-icon"><i class="fas fa-lightbulb"></i></div>
+                <div id="mentor-box" class="mentor-box" aria-live="polite">
+                    <div class="mentor-icon" aria-hidden="true"><i class="fas fa-lightbulb"></i></div>
                     <div class="mentor-content">
                         <span class="mentor-label">MENTOR HINT</span>
-                        <p id="mentor-hint">...</p>
+                        <p id="mentor-hint">Initializing your mentor...</p>
                     </div>
                 </div>
 
-                <div id="quiz-card" class="quiz-card">
+                <div id="quiz-card" class="quiz-card" aria-labelledby="scenario-title">
                     <h3 id="scenario-title">Step 1: Eligibility</h3>
-                    <p id="scenario-text">...</p>
+                    <p id="scenario-text">Loading question...</p>
                     
-                    <div id="options-container" class="options-grid">
+                    <div id="options-container" class="options-grid" role="group" aria-label="Selection Options">
                         <!-- Options injected here -->
                     </div>
                 </div>
 
-                <div id="feedback-message" class="feedback-message"></div>
+                <div id="feedback-message" class="feedback-message" aria-live="assertive"></div>
             </div>
         </aside>
 
         <!-- CENTER: SIMULATION -->
-        <main class="main-content simulation-panel">
-            <div class="panel-header">
-                <i class="fas fa-project-diagram"></i>
+        <main class="main-content simulation-panel" aria-label="Live Simulation View">
+            <div class="panel-header" role="banner">
+                <i class="fas fa-project-diagram" aria-hidden="true"></i>
                 <h2>Process Simulation</h2>
             </div>
             
             <div class="simulation-view">
-                <div id="simulation-log" class="simulation-log">
+                <div id="simulation-log" class="simulation-log" aria-live="polite">
                     <div class="empty-state">
-                        <i class="fas fa-ghost"></i>
+                        <i class="fas fa-ghost" aria-hidden="true"></i>
                         <p>Make a choice to see the process unfold...</p>
                     </div>
                 </div>
@@ -67,19 +68,21 @@
         </main>
 
         <!-- RIGHT: CHAT -->
-        <aside class="sidebar chat-panel">
-            <div class="panel-header">
-                <i class="fas fa-robot"></i>
+        <aside class="sidebar chat-panel" aria-label="AI Assistant Chat">
+            <div class="panel-header" role="banner">
+                <i class="fas fa-robot" aria-hidden="true"></i>
                 <h2>AI Assistant</h2>
             </div>
             
-            <div id="chat-messages" class="chat-messages">
-                <div class="msg ai">Hello! I'm your Election Guide. How can I help you today?</div>
+            <div id="chat-messages" class="chat-messages" aria-live="polite" aria-relevant="additions">
+                <div class="msg-wrapper ai">
+                    <div class="msg-bubble ai">Hello! I'm your Election Guide. How can I help you today?</div>
+                </div>
             </div>
 
             <div class="chat-input-area">
-                <input id="chat-input" type="text" placeholder="Ask about voting..." autocomplete="off">
-                <button id="chat-send"><i class="fas fa-paper-plane"></i></button>
+                <input id="chat-input" type="text" placeholder="Ask about voting..." aria-label="Type your message here" autocomplete="off">
+                <button id="chat-send" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
             </div>
         </aside>
 

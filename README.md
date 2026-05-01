@@ -2,7 +2,7 @@
 
 🔗 **Live Demo:** https://promptvars-challenge-2.web.app/                                                                                                                     
 🔗 **Backend API (Cloud Run):** https://election-backend-882610711158.asia-south1.run.app                                                                                                                                  
-🎥 **Demo Video:** *(Add your video link here)*
+🎥 **Demo Video:** https://drive.google.com/file/d/1hasMdNUdY3zVUhhGRCfDwW7iu9HqZXhJ/view?usp=sharing
 
 ---
 
@@ -272,7 +272,17 @@ This project demonstrates how AI can transform static educational systems into *
 
 ## 🎥 Demo
 
-👉 Add your demo video link here
+
+
+
+
+https://github.com/user-attachments/assets/aa153885-0885-49ed-8a47-0cc5b468bc7d
+
+
+
+
+
+
 
 ---
 

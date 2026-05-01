@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Learning Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- LEFT: CHOICES -->
+        <aside class="sidebar choices-panel">
+            <div class="panel-header">
+                <i class="fas fa-route"></i>
+                <h2>Your Journey</h2>
+            </div>
+            
+            <div id="quiz-card" class="quiz-card">
+                <div class="progress-bar">
+                    <div id="progress" class="progress" style="width: 0%"></div>
+                </div>
+                <h3 id="scenario-title">Getting Started</h3>
+                <p id="scenario-text">You just turned 18. What is your first step to participate in the election?</p>
+                
+                <div id="options-container" class="options-grid">
+                    <!-- Options injected here -->
+                </div>
+            </div>
+
+            <div id="feedback-message" class="feedback-message"></div>
+        </aside>
+
+        <!-- CENTER: SIMULATION -->
+        <main class="main-content simulation-panel">
+            <div class="panel-header">
+                <i class="fas fa-project-diagram"></i>
+                <h2>Process Simulation</h2>
+            </div>
+            
+            <div class="simulation-view">
+                <div id="simulation-log" class="simulation-log">
+                    <div class="empty-state">
+                        <i class="fas fa-ghost"></i>
+                        <p>Make a choice to see the process unfold...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT: CHAT -->
+        <aside class="sidebar chat-panel">
+            <div class="panel-header">
+                <i class="fas fa-robot"></i>
+                <h2>AI Assistant</h2>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+                <div class="msg ai">Hello! I'm your Election Guide. How can I help you today?</div>
+            </div>
+
+            <div class="chat-input-area">
+                <input id="chat-input" type="text" placeholder="Ask about voting..." autocomplete="off">
+                <button id="chat-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </aside>
+
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/chat.js"></script>
+</body>
+</html>

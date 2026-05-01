@@ -1,11 +1,17 @@
 import time
+import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, List
 
 from schemas import AIRequest, SuccessResponse, ErrorResponse, StepData, ExplainData, ChatData
-from utils import logger, is_prompt_injection, clean_text, response_cache
+from utils import logger, is_prompt_injection, clean_text
 from ai_engine import generate_steps_logic, explain_step_logic, chat_reply_logic
+
+# 1. Logging Setup (Cloud Ready)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 app = FastAPI(
     title="Election Assistant API",
@@ -54,21 +60,15 @@ async def root():
 async def get_steps(req: AIRequest):
     """Generates structured simulation steps for a choice."""
     text = clean_text(req.text)
+    print(f"DEBUG [steps] - INPUT: '{text}'")
     
     if is_prompt_injection(text):
         logger.warning(f"Security: Blocked prompt injection attempt: {text}")
         raise HTTPException(status_code=400, detail="Invalid input content detected.")
 
-    # Cache Lookup
-    cache_key = f"steps:{text}"
-    cached = response_cache.get(cache_key)
-    if cached:
-        logger.info(f"Efficiency: Returning cached steps for: {text}")
-        return SuccessResponse(data=StepData(steps=cached))
-
     try:
         steps = generate_steps_logic(text)
-        response_cache.set(cache_key, steps)
+        print(f"DEBUG [steps] - OUTPUT: {steps}")
         return SuccessResponse(data=StepData(steps=steps))
     except Exception as e:
         logger.error(f"Logic Error in /steps: {e}")
@@ -78,15 +78,11 @@ async def get_steps(req: AIRequest):
 async def get_explain(req: AIRequest):
     """Provides bullet-point explanations for a concept."""
     text = clean_text(req.text)
+    print(f"DEBUG [explain] - INPUT: '{text}'")
     
-    cache_key = f"explain:{text}"
-    cached = response_cache.get(cache_key)
-    if cached:
-        return SuccessResponse(data=ExplainData(explanation=cached))
-
     try:
         explanation = explain_step_logic(text)
-        response_cache.set(cache_key, explanation)
+        print(f"DEBUG [explain] - OUTPUT: {explanation}")
         return SuccessResponse(data=ExplainData(explanation=explanation))
     except Exception as e:
         logger.error(f"Logic Error in /explain: {e}")
@@ -96,12 +92,14 @@ async def get_explain(req: AIRequest):
 async def get_chat(req: AIRequest):
     """Interactive mentor chat endpoint."""
     text = clean_text(req.text)
+    print(f"DEBUG [chat] - INPUT: '{text}'")
     
     if is_prompt_injection(text):
         raise HTTPException(status_code=400, detail="Invalid input content.")
 
     try:
         reply = chat_reply_logic(text)
+        print(f"DEBUG [chat] - OUTPUT: '{reply[:50]}...'")
         return SuccessResponse(data=ChatData(reply=reply))
     except Exception as e:
         logger.error(f"Logic Error in /chat: {e}")

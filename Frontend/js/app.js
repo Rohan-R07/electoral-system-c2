@@ -79,6 +79,15 @@ async function handleChoice(option, btn) {
     if (isProcessing) return;
     isProcessing = true;
     
+    // Analytics: Option Selected
+    if (window.logEvent && window.analytics) {
+        window.logEvent(window.analytics, 'option_selected', {
+            step: currentStepIndex + 1,
+            option: option.text
+        });
+        console.log(`📊 Analytics Event: option_selected (Step ${currentStepIndex + 1}) - ${option.text}`);
+    }
+
     const buttons = optionsContainer.querySelectorAll(".option-btn");
     
     // Disable all buttons immediately
@@ -88,6 +97,12 @@ async function handleChoice(option, btn) {
     });
 
     if (option.correct) {
+        // Analytics: Correct Answer
+        if (window.logEvent && window.analytics) {
+            window.logEvent(window.analytics, 'step_correct', { step: currentStepIndex + 1 });
+            console.log(`📊 Analytics Event: step_correct (Step ${currentStepIndex + 1})`);
+        }
+
         anim.pop(btn);
         btn.classList.add('correct');
         btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${option.text}</span>`;
@@ -119,6 +134,12 @@ async function handleChoice(option, btn) {
         }, 2000);
 
     } else {
+        // Analytics: Wrong Answer
+        if (window.logEvent && window.analytics) {
+            window.logEvent(window.analytics, 'step_failed', { step: currentStepIndex + 1 });
+            console.log(`📊 Analytics Event: step_failed (Step ${currentStepIndex + 1})`);
+        }
+
         anim.shake(btn);
         btn.classList.add('wrong');
         btn.innerHTML = `<i class="fas fa-times-circle"></i> <span>${option.text}</span>`;
@@ -197,6 +218,12 @@ async function showFinalSuccess() {
     progressBar.style.width = "100%";
     appContainer.classList.add('completed-mode');
     simulationLog.innerHTML = "";
+
+    // Analytics: Journey Completed
+    if (window.logEvent && window.analytics) {
+        window.logEvent(window.analytics, 'journey_completed');
+        console.log("Analytics: journey_completed");
+    }
 
     const overlay = document.createElement("div");
     overlay.className = "completion-overlay";

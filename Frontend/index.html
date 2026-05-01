@@ -88,6 +88,51 @@
 
     </div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+        // IMPORTANT: Ensure you replace these with your ACTUAL config from Firebase Console
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID" // REQUIRED for Analytics
+        };
+
+        try {
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+
+            // Expose globally for vanilla JS access
+            window.analytics = analytics;
+            window.logEvent = logEvent;
+
+            // Manual Test Function
+            window.testAnalytics = () => {
+                if (window.analytics && window.logEvent) {
+                    window.logEvent(window.analytics, 'manual_test_event', { timestamp: Date.now() });
+                    console.log("✅ Analytics: Manual test event sent");
+                } else {
+                    console.error("❌ Analytics: Global objects not found");
+                }
+            };
+
+            console.log("🚀 Firebase Analytics initialized successfully");
+            
+            // Guaranteed Initial Event
+            logEvent(analytics, 'app_loaded');
+            console.log("📊 Analytics Event: app_loaded");
+
+        } catch (error) {
+            console.error("❌ Firebase Initialization Error:", error);
+        }
+    </script>
+
     <script type="module" src="js/app.js"></script>
     <script type="module" src="js/chat.js"></script>
 </body>

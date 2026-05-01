@@ -1,7 +1,5 @@
 import re
-import time
 import logging
-from typing import Dict, Any, List, Optional
 
 # --- Logging Setup ---
 logging.basicConfig(
@@ -9,29 +7,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("election-backend")
-
-# --- Simple In-Memory Cache ---
-class SimpleCache:
-    """A basic dictionary-based cache with optional TTL."""
-    def __init__(self, ttl_seconds: int = 3600):
-        self._store: Dict[str, Dict[str, Any]] = {}
-        self._ttl = ttl_seconds
-
-    def get(self, key: str) -> Optional[Any]:
-        if key in self._store:
-            item = self._store[key]
-            if time.time() - item['timestamp'] < self._ttl:
-                return item['value']
-            del self._store[key]
-        return None
-
-    def set(self, key: str, value: Any):
-        self._store[key] = {
-            'value': value,
-            'timestamp': time.time()
-        }
-
-response_cache = SimpleCache()
 
 # --- Security Utilities ---
 
@@ -57,7 +32,7 @@ def clean_text(text: str) -> str:
     cleaned = re.sub(r'[<>/{}\[\]]', '', text)
     return cleaned.strip()
 
-def format_steps(raw_steps: List[str]) -> List[str]:
+def format_steps(raw_steps: list[str]) -> list[str]:
     """Ensures steps are clean, non-numbered, and concise."""
     cleaned = []
     seen = set()

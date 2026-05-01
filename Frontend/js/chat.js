@@ -1,68 +1,61 @@
 import { getChat } from "./api.js";
 
 const input = document.getElementById("chat-input");
-const send = document.getElementById("chat-send");
-const box = document.getElementById("chat-messages");
+const sendBtn = document.getElementById("chat-send");
+const chatBox = document.getElementById("chat-messages");
 
 /**
- * Escapes HTML to prevent XSS
+ * Main function to handle user message sending
  */
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-/**
- * Debounce function to prevent spamming
- */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 const sendMessage = async () => {
     const text = input.value.trim();
-    if (!text || text.length > 500) return;
+    if (!text || sendBtn.disabled) return;
 
-    // 1. Add User Message (Sanitized)
-    addMessage(escapeHTML(text), "user");
+    // 1. UI Reset
     input.value = "";
+    sendBtn.disabled = true;
+    console.log("Chat: Sending message ->", text);
 
-    // 2. Add Typing Indicator
-    const typingId = addMessage("...", "ai typing-indicator");
+    // 2. Add User Bubble
+    addMessage(text, "user");
+
+    // 3. Add temporary "Thinking..." bubble
+    const typingId = addMessage("Thinking...", "ai typing-indicator");
 
     try {
+        // 4. Fetch from Backend
         const response = await getChat(text);
+        console.log("Chat: Received response ->", response);
+
+        // 5. Remove indicator and add actual response
         removeMessage(typingId);
-        
-        // 3. Add AI Response
         const aiMsgId = addMessage("", "ai");
+        
+        // 6. Typing Effect
         await typeMessage(aiMsgId, response);
+
     } catch (error) {
+        console.error("Chat Error:", error);
         removeMessage(typingId);
-        const errorId = addMessage("", "ai error");
-        await typeMessage(errorId, "I'm having some trouble connecting. Please try again!");
+        const errorId = addMessage("AI is unavailable, please try again.", "ai error");
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
     }
 };
 
-// Use debounced send to avoid rapid multiple clicks
-const debouncedSend = debounce(sendMessage, 300);
-
-send.onclick = debouncedSend;
+// Event Listeners
+sendBtn.onclick = sendMessage;
 input.onkeypress = (e) => { 
-    if (e.key === "Enter") debouncedSend(); 
+    if (e.key === "Enter") sendMessage(); 
 };
 
+/**
+ * DOM Helper: Add a message bubble
+ */
 export function addMessage(text, type) {
-    const id = "msg-" + Date.now() + Math.random().toString(36).substr(2, 9);
+    const id = "msg-" + Math.random().toString(36).substr(2, 9);
+    
     const wrapper = document.createElement("div");
     wrapper.className = `msg-wrapper ${type}`;
     wrapper.id = "wrapper-" + id;
@@ -70,20 +63,27 @@ export function addMessage(text, type) {
     const bubble = document.createElement("div");
     bubble.className = `msg-bubble ${type}`;
     bubble.id = id;
-    // We only use innerHTML for AI responses after careful handling in typeMessage
+    // Basic formatting for non-typed messages (errors/thinking)
     bubble.innerHTML = text.replace(/\n/g, "<br>");
 
     wrapper.appendChild(bubble);
-    box.appendChild(wrapper);
-    box.scrollTop = box.scrollHeight;
+    chatBox.appendChild(wrapper);
+    
+    chatBox.scrollTop = chatBox.scrollHeight;
     return id;
 }
 
+/**
+ * DOM Helper: Remove a specific message
+ */
 export function removeMessage(id) {
     const wrapper = document.getElementById("wrapper-" + id);
     if (wrapper) wrapper.remove();
 }
 
+/**
+ * Effect: Character-by-character rendering
+ */
 export async function typeMessage(id, text) {
     const element = document.getElementById(id);
     if (!element) return;
@@ -93,22 +93,21 @@ export async function typeMessage(id, text) {
 
     return new Promise(resolve => {
         let i = 0;
-        // Escape the full text once before typing to prevent XSS during injection
-        const escapedText = escapeHTML(text);
         const interval = setInterval(() => {
-            if (i < escapedText.length) {
-                // Handle &lt;br&gt; and other escaped sequences if needed, 
-                // but for simple text character by character injection:
-                element.innerHTML += escapedText[i];
+            if (i < text.length) {
+                const char = text[i];
+                if (char === "\n") {
+                    element.innerHTML += "<br>";
+                } else {
+                    element.innerHTML += char;
+                }
                 i++;
-                box.scrollTop = box.scrollHeight;
+                chatBox.scrollTop = chatBox.scrollHeight;
             } else {
                 clearInterval(interval);
                 element.classList.remove('typing');
-                // Post-process line breaks
-                element.innerHTML = element.innerHTML.replace(/&lt;br&gt;/g, "<br>").replace(/\n/g, "<br>");
                 resolve();
             }
-        }, 15);
+        }, 20);
     });
 }

@@ -17,23 +17,17 @@ const feedbackMessage = document.getElementById("feedback-message");
 const progressBar = document.getElementById("progress");
 
 let currentStepIndex = 0;
-let currentStepData = null; // Stores the randomly picked question set
+let currentStepData = null; 
 let isProcessing = false;
 
 function init() {
     renderStep();
 }
 
-/**
- * Utility to shuffle an array
- */
 function shuffleArray(arr) {
     return [...arr].sort(() => Math.random() - 0.5);
 }
 
-/**
- * Utility to pick a random item from an array
- */
 function getRandom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -44,10 +38,8 @@ async function renderStep() {
     const stepConfig = STEP_POOL[currentStepIndex];
     if (!stepConfig) return;
 
-    // RANDOM SELECTION: Pick a random question set for this step
     currentStepData = getRandom(stepConfig.questionSets);
 
-    // Clear Simulation Log with fade out
     const cards = simulationLog.querySelectorAll('.step-card, .recap-card');
     cards.forEach(c => { c.style.opacity = '0'; c.style.transform = 'scale(0.95)'; });
     
@@ -55,19 +47,15 @@ async function renderStep() {
         simulationLog.innerHTML = `<div class="empty-state"><i class="fas fa-route"></i><p>Ready for Step ${currentStepIndex + 1}...</p></div>`;
     }, 300);
 
-    // Update UI Content
     scenarioTitle.innerText = `Step ${currentStepIndex + 1}: ${stepConfig.title}`;
     scenarioText.innerText = currentStepData.question;
     mentorHint.innerText = currentStepData.hint;
     
-    // Update Progress
     const progress = (currentStepIndex / STEP_POOL.length) * 100;
     progressBar.style.width = `${progress}%`;
 
-    // Shuffle options for variety
     const shuffledOptions = shuffleArray(currentStepData.options);
 
-    // Re-render options
     anim.clearContainer(optionsContainer);
     feedbackMessage.innerText = "";
     feedbackMessage.className = "feedback-message";
@@ -80,7 +68,6 @@ async function renderStep() {
         optionsContainer.appendChild(btn);
     });
 
-    // Entrance Animations
     anim.fadeIn(scenarioTitle, 0);
     anim.fadeIn(scenarioText, 100);
     anim.fadeIn(document.getElementById("mentor-box"), 200);
@@ -94,18 +81,30 @@ async function handleChoice(option, btn) {
     
     const buttons = optionsContainer.querySelectorAll(".option-btn");
     
+    // Disable all buttons immediately
+    buttons.forEach(b => {
+        b.disabled = true;
+        if (b !== btn) b.style.opacity = "0.4";
+    });
+
     if (option.correct) {
         anim.pop(btn);
         btn.classList.add('correct');
         btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${option.text}</span>`;
         
-        buttons.forEach(b => {
-            if (b !== btn) { b.style.opacity = "0.4"; b.style.pointerEvents = "none"; }
-            b.disabled = true;
-        });
+        feedbackMessage.innerText = "✨ Thinking of an explanation...";
+        feedbackMessage.className = "feedback-message success thinking";
 
-        feedbackMessage.innerText = option.feedback;
-        feedbackMessage.className = "feedback-message success";
+        // Call AI for Dynamic Success Explanation
+        try {
+            const prompt = `Explain why selecting '${option.text}' is the correct answer for the question: '${currentStepData.question}' in the context of Indian elections.`;
+            const explanation = await getExplain(prompt);
+            feedbackMessage.innerText = explanation[0] || "Correct choice! You're following the right procedure.";
+            feedbackMessage.classList.remove('thinking');
+        } catch (e) {
+            feedbackMessage.innerText = "Correct! Well done.";
+            feedbackMessage.classList.remove('thinking');
+        }
 
         await runSimulation(currentStepData.simulation, true);
         await showRecap(currentStepData.recap);
@@ -117,40 +116,43 @@ async function handleChoice(option, btn) {
             } else {
                 showFinalSuccess();
             }
-        }, 1500);
+        }, 2000);
 
     } else {
         anim.shake(btn);
         btn.classList.add('wrong');
         btn.innerHTML = `<i class="fas fa-times-circle"></i> <span>${option.text}</span>`;
         
-        buttons.forEach(b => b.disabled = true);
-        feedbackMessage.innerText = "⚠️ Path rejected. Watching consequence...";
-        feedbackMessage.className = "feedback-message thinking";
+        feedbackMessage.innerText = "🤔 Analyzing your choice...";
+        feedbackMessage.className = "feedback-message error thinking";
 
-        // Hybrid Approach: If option has its own simulation, run it. Otherwise use a generic failure.
         const failureSim = option.simulation || [
             { text: "Option Selected...", sub: "Processing your decision." },
-            { text: "❌ Invalid Path", sub: "The choice made does not align with official procedures." }
+            { text: "❌ Invalid Path", sub: "This choice does not align with official procedures." }
         ];
 
         await runSimulation(failureSim, false);
 
+        // Call AI for Dynamic Failure Explanation
         try {
-            const explanation = await getExplain(`Explain why '${option.text}' is the wrong choice for: ${currentStepData.question}.`);
-            feedbackMessage.innerText = `❌ ${explanation[0] || option.feedback}`;
-            feedbackMessage.className = "feedback-message error";
+            const prompt = `Explain why selecting '${option.text}' is incorrect for the question: '${currentStepData.question}' in the context of Indian elections. Tell me what the correct approach should be.`;
+            const explanation = await getExplain(prompt);
+            feedbackMessage.innerText = `❌ ${explanation[0] || "That's not the right way."}`;
+            feedbackMessage.classList.remove('thinking');
         } catch (e) {
-            feedbackMessage.innerText = `❌ ${option.feedback}`;
-            feedbackMessage.className = "feedback-message error";
+            feedbackMessage.innerText = "❌ Incorrect. Please try a different approach.";
+            feedbackMessage.classList.remove('thinking');
         }
 
         setTimeout(() => {
             btn.classList.remove('wrong');
             btn.innerHTML = `<i class="far fa-circle"></i> <span>${option.text}</span>`;
-            buttons.forEach(b => { b.disabled = false; b.style.opacity = "1"; b.style.pointerEvents = "auto"; });
+            buttons.forEach(b => {
+                b.disabled = false;
+                b.style.opacity = "1";
+            });
             isProcessing = false;
-        }, 2000);
+        }, 3000);
     }
 }
 
@@ -202,7 +204,7 @@ async function showFinalSuccess() {
         <div class="glow-bg"></div>
         <div class="content">
             <h1>🎉 Journey Complete!</h1>
-            <p>You've mastered the essentials of the election process. You're ready to make a difference!</p>
+            <p>You've mastered the essentials of the election process. You're now ready to make a difference!</p>
             <button id="restart-btn" class="restart-btn">Restart Journey</button>
         </div>
     `;
@@ -217,7 +219,7 @@ async function showFinalSuccess() {
     };
 
     const msgId = chat.addMessage("...", "ai");
-    await chat.typeMessage(msgId, "Congratulations! You've navigated the complexities of registration and voting. Your journey was unique this time, and it will be again if you choose to practice more!");
+    await chat.typeMessage(msgId, "Congratulations! You've navigated the complexities of registration and voting. Your voice is your power!");
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }

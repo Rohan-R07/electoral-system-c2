@@ -1,113 +1,113 @@
-import logging
-import os
 import time
-from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, constr
-from ai_engine import generate_steps, explain_step, chat_reply
+from typing import Dict, List
 
-# 1. Logging Setup (Cloud Ready)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+from schemas import AIRequest, SuccessResponse, ErrorResponse, StepData, ExplainData, ChatData
+from utils import logger, is_prompt_injection, clean_text, response_cache
+from ai_engine import generate_steps_logic, explain_step_logic, chat_reply_logic
+
+app = FastAPI(
+    title="Election Assistant API",
+    description="Production-ready backend for election education simulation.",
+    version="2.0.0"
 )
-logger = logging.getLogger("election-assistant")
 
-app = FastAPI(title="Election Assistant API")
-
-# 2. CORS Configuration (More restrictive for production)
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+# --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"], # In production, restrict to your frontend domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 3. Simple In-Memory Cache for Efficiency
-cache: Dict[str, Any] = {}
-
-# 4. Simple Rate Limiting (In-memory)
-user_requests: Dict[str, List[float]] = {}
-RATE_LIMIT = 20  # requests
-TIME_WINDOW = 60 # seconds
+# --- Basic IP Rate Limiting ---
+request_history: Dict[str, List[float]] = {}
+LIMIT = 25 # requests
+WINDOW = 60 # seconds
 
 @app.middleware("http")
-async def rate_limiter(request: Request, call_next):
-    client_ip = request.client.host
+async def rate_limit_middleware(request: Request, call_next):
+    ip = request.client.host
     now = time.time()
     
-    if client_ip not in user_requests:
-        user_requests[client_ip] = []
+    if ip not in request_history:
+        request_history[ip] = []
     
-    # Filter out old requests
-    user_requests[client_ip] = [t for t in user_requests[client_ip] if now - t < TIME_WINDOW]
+    # Filter old requests
+    request_history[ip] = [t for t in request_history[ip] if now - t < WINDOW]
     
-    if len(user_requests[client_ip]) >= RATE_LIMIT:
-        logger.warning(f"Rate limit exceeded for {client_ip}")
-        raise HTTPException(status_code=429, detail="Too many requests. Please try again later.")
-    
-    user_requests[client_ip].append(now)
+    if len(request_history[ip]) >= LIMIT:
+        return ErrorResponse(status="error", message="Too many requests. Please slow down.").dict(), 429
+        
+    request_history[ip].append(now)
     return await call_next(request)
 
-# 5. Secure Request Models
-class AIRequest(BaseModel):
-    # Sanitize: limit length and basic filtering
-    text: constr(min_length=1, max_length=500)
+# --- Routes ---
 
-def sanitize_input(text: str) -> str:
-    # Basic protection against prompt injection / junk
-    return text.replace("Ignore previous instructions", "").strip()
+@app.get("/", tags=["Health"])
+async def root():
+    return {"status": "success", "message": "API is online"}
 
-@app.post("/steps")
-async def steps(req: AIRequest):
-    sanitized = sanitize_input(req.text)
-    cache_key = f"steps:{sanitized}"
+@app.post("/steps", response_model=SuccessResponse, tags=["AI"])
+async def get_steps(req: AIRequest):
+    """Generates structured simulation steps for a choice."""
+    text = clean_text(req.text)
     
-    if cache_key in cache:
-        return cache[cache_key]
-    
-    try:
-        logger.info(f"Generating steps for: {sanitized}")
-        result = {"steps": generate_steps(sanitized)}
-        cache[cache_key] = result
-        return result
-    except Exception as e:
-        logger.error(f"Error in /steps: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate steps")
+    if is_prompt_injection(text):
+        logger.warning(f"Security: Blocked prompt injection attempt: {text}")
+        raise HTTPException(status_code=400, detail="Invalid input content detected.")
 
-@app.post("/explain")
-async def explain(req: AIRequest):
-    sanitized = sanitize_input(req.text)
-    cache_key = f"explain:{sanitized}"
-    
-    if cache_key in cache:
-        return cache[cache_key]
+    # Cache Lookup
+    cache_key = f"steps:{text}"
+    cached = response_cache.get(cache_key)
+    if cached:
+        logger.info(f"Efficiency: Returning cached steps for: {text}")
+        return SuccessResponse(data=StepData(steps=cached))
 
     try:
-        logger.info(f"Explaining step: {sanitized}")
-        result = {"explanation": explain_step(sanitized)}
-        cache[cache_key] = result
-        return result
+        steps = generate_steps_logic(text)
+        response_cache.set(cache_key, steps)
+        return SuccessResponse(data=StepData(steps=steps))
     except Exception as e:
-        logger.error(f"Error in /explain: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate explanation")
+        logger.error(f"Logic Error in /steps: {e}")
+        return ErrorResponse(message="Failed to generate simulation steps.")
 
-@app.post("/chat")
-async def chat(req: AIRequest):
-    sanitized = sanitize_input(req.text)
-    # Chat responses usually not cached due to dynamic nature
+@app.post("/explain", response_model=SuccessResponse, tags=["AI"])
+async def get_explain(req: AIRequest):
+    """Provides bullet-point explanations for a concept."""
+    text = clean_text(req.text)
+    
+    cache_key = f"explain:{text}"
+    cached = response_cache.get(cache_key)
+    if cached:
+        return SuccessResponse(data=ExplainData(explanation=cached))
+
     try:
-        logger.info(f"Chat request: {sanitized}")
-        return {"reply": chat_reply(sanitized)}
+        explanation = explain_step_logic(text)
+        response_cache.set(cache_key, explanation)
+        return SuccessResponse(data=ExplainData(explanation=explanation))
     except Exception as e:
-        logger.error(f"Error in /chat: {e}")
-        raise HTTPException(status_code=500, detail="AI Assistant is currently unavailable")
+        logger.error(f"Logic Error in /explain: {e}")
+        return ErrorResponse(message="Failed to generate explanation.")
 
-if __name__ == "__main__":
-    import uvicorn
-    # Use PORT from environment variable (Google Cloud Run standard)
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+@app.post("/chat", response_model=SuccessResponse, tags=["AI"])
+async def get_chat(req: AIRequest):
+    """Interactive mentor chat endpoint."""
+    text = clean_text(req.text)
+    
+    if is_prompt_injection(text):
+        raise HTTPException(status_code=400, detail="Invalid input content.")
+
+    try:
+        reply = chat_reply_logic(text)
+        return SuccessResponse(data=ChatData(reply=reply))
+    except Exception as e:
+        logger.error(f"Logic Error in /chat: {e}")
+        return ErrorResponse(message="AI Assistant is currently unavailable.")
+
+# --- Global Error Handler ---
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return ErrorResponse(status="error", message=exc.detail).dict(), exc.status_code

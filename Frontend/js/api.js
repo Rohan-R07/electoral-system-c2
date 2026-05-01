@@ -1,12 +1,12 @@
 const CONFIG = {
     BASE_URL: window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
               ? "http://127.0.0.1:8000" 
-              : "https://your-production-api.com", // Should be configured for Google Cloud Run
-    TIMEOUT: 15000 // 15 seconds
+              : "https://your-production-api.com",
+    TIMEOUT: 15000
 };
 
 /**
- * Enhanced Fetch Wrapper with Timeout and Error Handling
+ * Enhanced Fetch Wrapper with Timeout and Data Unwrapping
  */
 async function secureFetch(endpoint, data) {
     const controller = new AbortController();
@@ -25,17 +25,18 @@ async function secureFetch(endpoint, data) {
 
         clearTimeout(timeoutId);
 
+        const responseData = await res.json();
+
         if (!res.ok) {
-            const errorBody = await res.json().catch(() => ({ detail: "Unknown error" }));
-            throw new Error(errorBody.detail || `Server returned ${res.status}`);
+            throw new Error(responseData.message || responseData.detail || `Server returned ${res.status}`);
         }
 
-        return await res.json();
+        // Production Backend returns { "status": "success", "data": { ... } }
+        // We unwrap the data field for convenience in the logic layer
+        return responseData.status === "success" ? responseData.data : responseData;
     } catch (error) {
         clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-            throw new Error("Request timed out. Please try again.");
-        }
+        if (error.name === 'AbortError') throw new Error("Request timed out. Please try again.");
         console.error(`API Error (${endpoint}):`, error);
         throw error;
     }
@@ -53,5 +54,6 @@ export async function getExplain(text) {
 
 export async function getChat(text) {
     const data = await secureFetch("/chat", { text });
+    // Handles both { "reply": "..." } and { "data": { "reply": "..." } } thanks to unwrap
     return data.reply;
 }

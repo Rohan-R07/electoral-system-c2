@@ -2,7 +2,7 @@
 
 🔗 **Live Demo:** https://promptvars-challenge-2.web.app/  
 🔗 **Backend API (Cloud Run):** https://election-backend-882610711158.asia-south1.run.app  
-🎥 **Demo Video:** https://drive.google.com/file/d/1xUMRhlmsQEpYmTmJMIqTC4hUzk7JhXt3/view?usp=sharing  
+🎥 **Demo Video:** [https://drive.google.com/file/d/1xUMRhlmsQEpYmTmJMIqTC4hUzk7JhXt3/view?usp=sharing]
 
 ---
 

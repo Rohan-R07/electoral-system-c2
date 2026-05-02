@@ -1,4 +1,4 @@
-export const STEP_POOL = [
+const STEP_POOL = [
     {
         id: 1,
         title: "Eligibility Check",
@@ -135,3 +135,5 @@ export const STEP_POOL = [
         ]
     }
 ];
+
+window.STEP_POOL = STEP_POOL;

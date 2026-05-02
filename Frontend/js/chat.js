@@ -1,13 +1,10 @@
-import { getChat } from "./api.js";
-
-const input = document.getElementById("chat-input");
-const sendBtn = document.getElementById("chat-send");
-const chatBox = document.getElementById("chat-messages");
-
 /**
  * Main function to handle user message sending
  */
 const sendMessage = async () => {
+    const input = document.getElementById("chat-input");
+    const sendBtn = document.getElementById("chat-send");
+    
     const text = input.value.trim();
     if (!text || sendBtn.disabled) return;
 
@@ -23,8 +20,8 @@ const sendMessage = async () => {
     const typingId = addMessage("Thinking...", "ai typing-indicator");
 
     try {
-        // 4. Fetch from Backend
-        const response = await getChat(text);
+        // 4. Fetch from Backend (Global function)
+        const response = await window.getChat(text);
         console.log("Chat: Received response ->", response);
 
         // Telemetry: Chat Used
@@ -36,29 +33,24 @@ const sendMessage = async () => {
         removeMessage(typingId);
         const aiMsgId = addMessage("", "ai");
         
-        // 6. Typing Effect
+        // 6. Typing Effect (Global anim)
         await typeMessage(aiMsgId, response);
 
     } catch (error) {
         console.error("Chat Error:", error);
         removeMessage(typingId);
-        const errorId = addMessage("AI is unavailable, please try again.", "ai error");
+        addMessage("AI is unavailable, please try again.", "ai error");
     } finally {
         sendBtn.disabled = false;
         input.focus();
     }
 };
 
-// Event Listeners
-sendBtn.onclick = sendMessage;
-input.onkeypress = (e) => { 
-    if (e.key === "Enter") sendMessage(); 
-};
-
 /**
  * DOM Helper: Add a message bubble
  */
-export function addMessage(text, type) {
+function addMessage(text, type) {
+    const chatBox = document.getElementById("chat-messages");
     const id = "msg-" + Math.random().toString(36).substr(2, 9);
     
     const wrapper = document.createElement("div");
@@ -81,7 +73,7 @@ export function addMessage(text, type) {
 /**
  * DOM Helper: Remove a specific message
  */
-export function removeMessage(id) {
+function removeMessage(id) {
     const wrapper = document.getElementById("wrapper-" + id);
     if (wrapper) wrapper.remove();
 }
@@ -89,7 +81,8 @@ export function removeMessage(id) {
 /**
  * Effect: Character-by-character rendering
  */
-export async function typeMessage(id, text) {
+async function typeMessage(id, text) {
+    const chatBox = document.getElementById("chat-messages");
     const element = document.getElementById(id);
     if (!element) return;
 
@@ -116,3 +109,22 @@ export async function typeMessage(id, text) {
         }, 20);
     });
 }
+
+// Setup listeners when script loads
+document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("chat-input");
+    const sendBtn = document.getElementById("chat-send");
+    
+    if (sendBtn) sendBtn.onclick = sendMessage;
+    if (input) {
+        input.onkeypress = (e) => { 
+            if (e.key === "Enter") sendMessage(); 
+        };
+    }
+});
+
+// Global scope access
+window.chat = {
+    addMessage,
+    typeMessage
+};

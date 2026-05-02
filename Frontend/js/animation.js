@@ -1,18 +1,18 @@
-export function shake(element) {
+function shake(element) {
     element.classList.add('wrong-shake');
     setTimeout(() => {
         element.classList.remove('wrong-shake');
     }, 400);
 }
 
-export function pop(element) {
+function pop(element) {
     element.classList.add('correct-pop');
     setTimeout(() => {
         element.classList.remove('correct-pop');
     }, 400);
 }
 
-export function fadeIn(element, delay = 0) {
+function fadeIn(element, delay = 0) {
     element.style.opacity = '0';
     element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
     element.style.transform = 'translateY(10px)';
@@ -23,7 +23,7 @@ export function fadeIn(element, delay = 0) {
     }, delay);
 }
 
-export function fadeOut(element) {
+function fadeOut(element) {
     return new Promise(resolve => {
         element.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
         element.style.opacity = '0';
@@ -34,7 +34,7 @@ export function fadeOut(element) {
     });
 }
 
-export function typeText(element, text, speed = 30) {
+function typeText(element, text, speed = 30) {
     return new Promise(resolve => {
         element.innerText = "";
         element.classList.add('typing');
@@ -52,7 +52,7 @@ export function typeText(element, text, speed = 30) {
     });
 }
 
-export function getAnimationType(text) {
+function getAnimationType(text) {
     const t = text.toLowerCase();
     if (t.includes("downloading")) return "download";
     if (t.includes("opening")) return "window-fade";
@@ -64,6 +64,17 @@ export function getAnimationType(text) {
     return "default-fade";
 }
 
-export function clearContainer(container) {
+function clearContainer(container) {
     container.innerHTML = '';
 }
+
+// Global scope access
+window.anim = {
+    shake,
+    pop,
+    fadeIn,
+    fadeOut,
+    typeText,
+    getAnimationType,
+    clearContainer
+};

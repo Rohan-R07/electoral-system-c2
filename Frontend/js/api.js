@@ -72,23 +72,28 @@ async function secureFetch(endpoint, data, allowCache = true) {
     throw new Error("AI Service unavailable. Please try again later.");
 }
 
-export async function getSteps(context) {
+async function getSteps(context) {
     try {
         const data = await secureFetch("/steps", { text: context });
         return Array.isArray(data?.steps) ? data.steps : [];
     } catch { return ["Official portal access", "Registration setup", "Information verification"]; }
 }
 
-export async function getExplain(text) {
+async function getExplain(text) {
     try {
         const data = await secureFetch("/explain", { text });
         return Array.isArray(data?.explanation) ? data.explanation : [];
     } catch { return ["Verified process step", "Ensures compliance"]; }
 }
 
-export async function getChat(text) {
+async function getChat(text) {
     try {
         const data = await secureFetch("/chat", { text }, false); // Don't cache chat
         return data?.reply || "I'm sorry, I'm having trouble responding right now.";
     } catch { return "I am currently offline. Please check back in a moment!"; }
 }
+
+// Global scope access
+window.getSteps = getSteps;
+window.getExplain = getExplain;
+window.getChat = getChat;

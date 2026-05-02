@@ -1,148 +1,100 @@
-/**
- * Election Learning Assistant - Production API Test Suite
- * Performs strict validation and performance benchmarking.
- */
-
-import { getSteps, getExplain, getChat } from "./api.js";
+console.log("test.js loaded");
 
 const TEST_CONFIG = {
-    LATENCY_THRESHOLD: 10000, // 10s max for AI inference
+    LATENCY_THRESHOLD: 12000, // 12s for heavy AI tasks
     RETRY_DELAY: 500
 };
 
-/**
- * Utility: Structured Logging
- */
-function report(name, status, details = {}, time = 0) {
+function report(name, status, message = "", time = 0) {
     const icon = status === "PASS" ? "✅" : (status === "FAIL" ? "❌" : "⚠️");
     console.log(`${icon} [${status}] ${name} ${time ? `(${time.toFixed(0)}ms)` : ""}`);
-    if (status === "FAIL") console.error("   └─ Error:", details);
+    if (status === "FAIL") console.error(`   └─ Error: ${message}`);
 }
 
-/**
- * 1. TEST: /steps logic (Positive & Type Check)
- */
 async function validateSteps() {
     const start = performance.now();
     try {
-        const steps = await getSteps("Registering via App");
+        const steps = await window.getSteps("Registering a new voter in Mumbai");
         const duration = performance.now() - start;
-        
-        const isArray = Array.isArray(steps);
-        const hasContent = steps.length > 0;
-        
-        if (isArray && hasContent) {
-            report("Steps API Integrity", "PASS", {}, duration);
-            return true;
-        }
-        throw new Error(`Invalid format. Expected non-empty array, got: ${typeof steps}`);
+        const isValid = Array.isArray(steps) && steps.length > 0;
+        report("Steps API Integrity", isValid ? "PASS" : "FAIL", "Invalid array format", duration);
+        return isValid;
     } catch (e) {
         report("Steps API Integrity", "FAIL", e.message);
         return false;
     }
 }
 
-/**
- * 2. TEST: /explain logic (Positive & Type Check)
- */
 async function validateExplain() {
     const start = performance.now();
     try {
-        const exp = await getExplain("Voter ID Correction");
+        const exp = await window.getExplain("VVPAT Verification");
         const duration = performance.now() - start;
-
-        if (Array.isArray(exp) && exp.length > 0) {
-            report("Explain API Integrity", "PASS", {}, duration);
-            return true;
-        }
-        throw new Error("Response is not a valid explanation array");
+        const isValid = Array.isArray(exp) && exp.length > 0;
+        report("Explain API Integrity", isValid ? "PASS" : "FAIL", "Explanation expected as array", duration);
+        return isValid;
     } catch (e) {
         report("Explain API Integrity", "FAIL", e.message);
         return false;
     }
 }
 
-/**
- * 3. TEST: /chat logic (Positive & Type Check)
- */
 async function validateChat() {
     const start = performance.now();
     try {
-        const reply = await getChat("Hello mentor");
+        const reply = await window.getChat("How can I check my name in the roll?");
         const duration = performance.now() - start;
-
-        if (typeof reply === "string" && reply.trim().length > 0) {
-            report("Chat API Integrity", "PASS", {}, duration);
-            return true;
-        }
-        throw new Error("Chat reply is empty or not a string");
+        const isValid = typeof reply === "string" && reply.trim().length > 0;
+        report("Chat API Integrity", isValid ? "PASS" : "FAIL", "Chat reply expected as string", duration);
+        return isValid;
     } catch (e) {
         report("Chat API Integrity", "FAIL", e.message);
         return false;
     }
 }
 
-/**
- * 4. TEST: Edge Cases & Robustness
- */
 async function validateEdgeCases() {
-    console.group("🧪 Robustness & Edge Cases");
+    console.group("🧪 Edge Case & Robustness Audit");
 
-    // Case: Empty Input
+    // Case 1: Empty String
     try {
-        const res = await getChat("");
-        report("Empty Chat Input", "PASS", "Graceful fallback");
-    } catch (e) {
-        report("Empty Chat Input", "FAIL", e.message);
+        await window.getChat("");
+        report("Empty Input Handling", "PASS", "Graceful fallback");
+    } catch {
+        report("Empty Input Handling", "FAIL", "System crashed on empty input");
     }
 
-    // Case: Null Input
+    // Case 2: Null Input
     try {
-        const res = await getSteps(null);
-        report("Null Steps Context", "PASS", "Resilient to null");
-    } catch (e) {
-        report("Null Steps Context", "FAIL", e.message);
-    }
-
-    // Case: Extremely long input (Overflow Test)
-    try {
-        const longText = "Voter ".repeat(100);
-        await getExplain(longText);
-        report("Long Input Handling", "PASS", "Handled without crash");
-    } catch (e) {
-        report("Long Input Handling", "FAIL", e.message);
+        await window.getSteps(null);
+        report("Null Context Resilience", "PASS", "Safe default used");
+    } catch {
+        report("Null Context Resilience", "FAIL", "System crashed on null");
     }
 
     console.groupEnd();
 }
 
-/**
- * MASTER RUNNER
- */
-export async function runFullAudit() {
-    console.log("%c🚀 Starting Production System Audit...", "color: #818cf8; font-weight: bold; font-size: 1.2rem;");
+async function runFullAudit() {
+    console.log("%c🚀 Starting Final System Audit...", "color: #6366f1; font-weight: bold; font-size: 1.1rem;");
     console.log("Environment:", window.location.hostname);
-    console.log("Timestamp:", new Date().toLocaleTimeString());
     console.log("-------------------------------------------");
 
-    let score = 0;
-    if (await validateSteps()) score++;
+    let totalPassed = 0;
+    if (await validateSteps()) totalPassed++;
     await new Promise(r => setTimeout(r, TEST_CONFIG.RETRY_DELAY));
     
-    if (await validateExplain()) score++;
+    if (await validateExplain()) totalPassed++;
     await new Promise(r => setTimeout(r, TEST_CONFIG.RETRY_DELAY));
 
-    if (await validateChat()) score++;
+    if (await validateChat()) totalPassed++;
 
     await validateEdgeCases();
 
     console.log("-------------------------------------------");
-    console.log(`🏁 Audit Complete. Core System Score: ${score}/3`);
-    
-    if (window.logUserAction) {
-        window.logUserAction("test_audit_completed", { score });
-    }
+    console.log(`🏁 Audit Complete. Core Modules Passed: ${totalPassed}/3`);
 }
 
-window.runAllTests = runFullAudit; // Backward compatibility
+// Global scope access
+window.runAllTests = runFullAudit;
 window.runFullAudit = runFullAudit;

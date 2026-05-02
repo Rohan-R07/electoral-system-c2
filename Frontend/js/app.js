@@ -1,8 +1,3 @@
-import { getExplain } from "./api.js";
-import { STEP_POOL } from "./data.js";
-import * as anim from "./animation.js";
-import * as chat from "./chat.js";
-
 const appContainer = document.querySelector(".app-container");
 const sidebar = document.querySelector(".sidebar.choices-panel");
 const simulationPanel = document.querySelector(".main-content.simulation-panel");
@@ -35,10 +30,10 @@ function getRandom(arr) {
 async function renderStep() {
     isProcessing = false;
     
-    const stepConfig = STEP_POOL[currentStepIndex];
-    if (!stepConfig) return;
+    const step = window.STEP_POOL[currentStepIndex];
+    if (!step) return;
 
-    currentStepData = getRandom(stepConfig.questionSets);
+    currentStepData = getRandom(step.questionSets);
 
     const cards = simulationLog.querySelectorAll('.step-card, .recap-card');
     cards.forEach(c => { c.style.opacity = '0'; c.style.transform = 'scale(0.95)'; });
@@ -47,16 +42,16 @@ async function renderStep() {
         simulationLog.innerHTML = `<div class="empty-state"><i class="fas fa-route"></i><p>Ready for Step ${currentStepIndex + 1}...</p></div>`;
     }, 300);
 
-    scenarioTitle.innerText = `Step ${currentStepIndex + 1}: ${stepConfig.title}`;
+    scenarioTitle.innerText = `Step ${currentStepIndex + 1}: ${step.title}`;
     scenarioText.innerText = currentStepData.question;
     mentorHint.innerText = currentStepData.hint;
     
-    const progress = (currentStepIndex / STEP_POOL.length) * 100;
+    const progress = (currentStepIndex / window.STEP_POOL.length) * 100;
     progressBar.style.width = `${progress}%`;
 
     const shuffledOptions = shuffleArray(currentStepData.options);
 
-    anim.clearContainer(optionsContainer);
+    window.anim.clearContainer(optionsContainer);
     feedbackMessage.innerText = "";
     feedbackMessage.className = "feedback-message";
 
@@ -68,11 +63,11 @@ async function renderStep() {
         optionsContainer.appendChild(btn);
     });
 
-    anim.fadeIn(scenarioTitle, 0);
-    anim.fadeIn(scenarioText, 100);
-    anim.fadeIn(document.getElementById("mentor-box"), 200);
+    window.anim.fadeIn(scenarioTitle, 0);
+    window.anim.fadeIn(scenarioText, 100);
+    window.anim.fadeIn(document.getElementById("mentor-box"), 200);
     const buttons = optionsContainer.querySelectorAll(".option-btn");
-    buttons.forEach((b, i) => anim.fadeIn(b, 300 + (i * 50)));
+    buttons.forEach((b, i) => window.anim.fadeIn(b, 300 + (i * 50)));
 }
 
 async function handleChoice(option, btn) {
@@ -102,7 +97,7 @@ async function handleChoice(option, btn) {
             window.logUserAction('correct_answer', { step: currentStepIndex + 1 });
         }
 
-        anim.pop(btn);
+        window.anim.pop(btn);
         btn.classList.add('correct');
         btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${option.text}</span>`;
         
@@ -112,7 +107,7 @@ async function handleChoice(option, btn) {
         // Call AI for Dynamic Success Explanation
         try {
             const prompt = `Explain why selecting '${option.text}' is the correct answer for the question: '${currentStepData.question}' in the context of Indian elections.`;
-            const explanation = await getExplain(prompt);
+            const explanation = await window.getExplain(prompt);
             feedbackMessage.innerText = explanation[0] || "Correct choice! You're following the right procedure.";
             feedbackMessage.classList.remove('thinking');
         } catch (e) {
@@ -125,7 +120,7 @@ async function handleChoice(option, btn) {
 
         setTimeout(() => {
             currentStepIndex++;
-            if (currentStepIndex < STEP_POOL.length) {
+            if (currentStepIndex < window.STEP_POOL.length) {
                 renderStep();
             } else {
                 showFinalSuccess();
@@ -138,7 +133,7 @@ async function handleChoice(option, btn) {
             window.logUserAction('wrong_answer', { step: currentStepIndex + 1 });
         }
 
-        anim.shake(btn);
+        window.anim.shake(btn);
         btn.classList.add('wrong');
         btn.innerHTML = `<i class="fas fa-times-circle"></i> <span>${option.text}</span>`;
         
@@ -155,7 +150,7 @@ async function handleChoice(option, btn) {
         // Call AI for Dynamic Failure Explanation
         try {
             const prompt = `Explain why selecting '${option.text}' is incorrect for the question: '${currentStepData.question}' in the context of Indian elections. Tell me what the correct approach should be.`;
-            const explanation = await getExplain(prompt);
+            const explanation = await window.getExplain(prompt);
             feedbackMessage.innerText = `❌ ${explanation[0] || "That's not the right way."}`;
             feedbackMessage.classList.remove('thinking');
         } catch (e) {
@@ -179,7 +174,7 @@ async function runSimulation(steps, isSuccess) {
     simulationLog.innerHTML = "";
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        const animType = anim.getAnimationType(step.text);
+        const animType = window.anim.getAnimationType(step.text);
         const card = document.createElement("div");
         card.className = `step-card anim-${animType} ${isSuccess ? '' : 'failure'}`;
         
@@ -196,8 +191,9 @@ async function runSimulation(steps, isSuccess) {
             <div class="step-sub-text">${step.sub}</div>
             ${visual}
         `;
+        
         simulationLog.appendChild(card);
-        anim.fadeIn(card, 0);
+        window.anim.fadeIn(card, 0);
         simulationLog.scrollTop = simulationLog.scrollHeight;
         await delay(1200);
     }
@@ -242,10 +238,11 @@ async function showFinalSuccess() {
         renderStep();
     };
 
-    const msgId = chat.addMessage("...", "ai");
-    await chat.typeMessage(msgId, "Congratulations! You've navigated the complexities of registration and voting. Your voice is your power!");
+    const msgId = window.chat.addMessage("...", "ai");
+    await window.chat.typeMessage(msgId, "Congratulations! You've navigated the complexities of registration and voting. Your voice is your power!");
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-init();
+// Initialize when DOM ready
+document.addEventListener("DOMContentLoaded", init);

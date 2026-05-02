@@ -1,92 +1,94 @@
 # 🗳️ AI-Powered Electoral System Assistant
 
-🔗 **Live Demo:** https://promptvars-challenge-2.web.app/                                                                                                                     
-🔗 **Backend API (Cloud Run):** https://election-backend-882610711158.asia-south1.run.app                                                                                                                                  
+🔗 **Live Demo:** https://promptvars-challenge-2.web.app/                                                                                        
+🔗 **Backend API (Cloud Run):** https://election-backend-882610711158.asia-south1.run.app                                                                                       
 🎥 **Demo Video:** https://drive.google.com/file/d/1hasMdNUdY3zVUhhGRCfDwW7iu9HqZXhJ/view?usp=sharing
 
 ---
 
 ## 📌 Overview
 
-This project is an **AI-powered interactive electoral learning and assistance system** designed to guide users through election-related processes using **dynamic simulations, contextual explanations, and intelligent decision-making**.
+This project is an **AI-driven electoral learning system** built for **Google Prompt Wars – Challenge 2**, designed to simulate real-world election workflows through **interactive decision-based learning**.
 
-Unlike static learning platforms, this system:
+Instead of static tutorials, the system dynamically generates:
 
-* Generates **AI-driven steps, explanations, and scenarios**
-* Simulates **real-world consequences of user decisions**
-* Provides **interactive MCQ-based learning with AI feedback**
-* Adapts responses based on **user input and context**
+* Step-by-step electoral processes
+* Context-aware explanations
+* Scenario-based MCQs
+* Consequence-driven simulations
+
+The goal is not just to inform users, but to help them **understand decisions and their outcomes**.
 
 ---
 
 ## 🎯 Chosen Vertical
 
-**Civic Tech / Electoral Systems**
+**Civic Tech – Electoral Systems**
 
 The system focuses on:
 
 * Voter registration workflows
-* Election procedures
-* User decision-making within electoral scenarios
-* Practical understanding of government systems
+* Electoral procedures
+* Decision-making in real-world scenarios
+* Practical civic awareness
 
 ---
 
-## 🚀 How the Solution Works
+## 🧠 Core Idea (How it Works)
 
 ### 1. AI Assistant
 
-* Users can interact freely with an assistant
-* Handles unclear queries and guides users toward valid election-related actions
-* Fully dynamic (no hardcoded responses)
+* Handles open-ended user queries
+* Provides contextual guidance
+* Acts as fallback when users are unsure
 
 ---
 
-### 2. AI-Generated Simulation Engine
+### 2. Simulation-Based Learning Engine
 
-The core strength of this project lies in its **simulation system**:
+This is the core of the system.
 
-* Every MCQ is backed by **AI-generated logic**
-* When a user selects an option:
+Each interaction follows:
 
-  * ✅ Correct → AI confirms and continues flow
-  * ❌ Wrong → AI simulates consequences
+```text
+User Action → AI Evaluation → Outcome Simulation → Explanation
+```
+
+* ✅ Correct decisions → progression
+* ❌ Incorrect decisions → simulated consequences
 
 Example:
 
 ```text
-User selects wrong form → System simulates rejection process → AI explains why
+Wrong form selected → system simulates rejection → AI explains correction
 ```
 
-👉 This creates a **cause-effect learning loop**, not just Q&A.
+This creates a **cause–effect learning loop**, not just Q&A.
 
 ---
 
 ### 3. AI-Generated Questions & Options
 
-* Questions are not static
-* Options are dynamically generated to:
-
-  * Avoid repetition
-  * Improve engagement
-  * Simulate real-world ambiguity
+* Questions are dynamically generated
+* Options are intentionally realistic and ambiguous
+* Prevents memorization and encourages reasoning
 
 ---
 
 ### 4. Step-Based Guidance System
 
-For any valid query:
+For any user intent:
 
 ```text
-Input → AI → Step-by-step process
+Input → AI → Structured steps → Guided completion
 ```
 
-Example:
+Example flows include:
 
-* Register as voter
-* Verify identity
-* Submit application
-* Complete voting
+* Registering as a voter
+* Identity verification
+* Form submission
+* Voting process
 
 ---
 
@@ -94,81 +96,95 @@ Example:
 
 * Wrong answers trigger:
 
-  * Simulation
   * Explanation
+  * Simulation
   * Retry mechanism
-* System ensures user **understands the process before progressing**
+
+The system ensures **understanding before progression**.
 
 ---
 
-## 🧠 Challenge Expectations (How this project meets them)
-
-### ✔ Smart, Dynamic Assistant
-
-* AI-driven responses (no static logic)
-* Context-aware outputs
-
----
-
-### ✔ Logical Decision Making
-
-* MCQ system simulates outcomes
-* AI evaluates user choices and responds accordingly
-
----
-
-### ✔ Effective Use of Google Services
-
-* Firebase Hosting (Frontend)
-* Firebase Analytics (User behavior tracking)
-* Cloud Run (Backend deployment)
-* Real-time Analytics insights
-
----
-
-### ✔ Real-World Usability
-
-* Focused on actual electoral processes
-* Simulates real consequences of wrong actions
-* Practical for civic education
-
----
-
-### ✔ Clean & Maintainable Code
-
-* Modular API structure
-* Centralized fetch handling
-* Structured error handling
-* Clear separation of concerns
-
----
-
-## 🧪 Technical Architecture
+## 🧪 System Architecture
 
 ```text
 Frontend (Firebase Hosting)
         ↓
 Cloud Run (FastAPI Backend)
         ↓
-OpenRouter AI Models
+AI Model (OpenRouter)
+        ↓
+Firestore + Analytics (Tracking Layer)
 ```
 
 ---
 
-## 📊 Firebase Analytics Integration
+## 📊 Tracking & Analytics (Key Strength)
 
-The system tracks:
+The system includes **real-time behavior tracking** using Firebase:
 
-* User interaction events
-* Step completion rates
-* Incorrect decision patterns
-* AI usage frequency
+### Firestore Event Logging
 
-### Real-Time Analytics
+Each interaction logs:
 
-* Monitor active users
-* Track engagement live
-* Observe user behavior patterns
+* Step number
+* Selected option
+* Correct / incorrect decision
+* Timestamp
+* User metadata
+
+### Analytics Events
+
+* `app_loaded`
+* `option_selected`
+* `chat_used`
+* `journey_completed`
+
+This enables:
+
+* Behavioral analysis
+* Learning pattern tracking
+* Real-world system observability
+
+---
+
+## 🧠 Challenge Expectations Alignment
+
+### ✔ Smart, Dynamic Assistant
+
+* Fully AI-driven responses
+* No hardcoded flows
+
+---
+
+### ✔ Logical Decision Making
+
+* Outcome-based MCQ system
+* Context-aware evaluation
+
+---
+
+### ✔ Effective Use of Google Services
+
+* Firebase Hosting
+* Firebase Analytics
+* Firebase Firestore (event tracking)
+* Google Cloud Run
+
+---
+
+### ✔ Real-World Usability
+
+* Based on actual electoral processes
+* Simulates real consequences
+* Practical for civic learning
+
+---
+
+### ✔ Clean & Maintainable Code
+
+* Modular structure
+* Centralized API handling
+* Structured error management
 
 ---
 
@@ -176,16 +192,16 @@ The system tracks:
 
 ### 🔹 Code Quality
 
-* Modular functions
-* Reusable API layer
-* Clear logging and debugging
+* Modular API design
+* Reusable utilities
+* Clear separation of concerns
 
 ---
 
 ### 🔹 Security
 
-* API keys stored via environment variables
-* No sensitive data exposed in frontend
+* API keys managed via environment variables
+* No sensitive backend exposure
 
 ---
 
@@ -193,39 +209,23 @@ The system tracks:
 
 * Optimized API calls
 * Timeout handling
-* Fallback mechanisms for AI models
+* Response fallback logic
 
 ---
 
 ### 🔹 Testing
 
-* Endpoint testing via Swagger
-* Manual validation of flows
-* Error handling validation
+* API validation via test suite
+* Edge case handling
+* Performance observation
 
 ---
 
 ### 🔹 Accessibility
 
-* Simple UI interaction model
-* Clear feedback messages
-* Guided user flow
-
----
-
-### 🔹 Google Services Used
-
-* Firebase Hosting
-* Firebase Analytics
-* Google Cloud Run
-
----
-
-## ⚠️ Assumptions
-
-* Users have basic understanding of navigation
-* Internet connectivity is available
-* AI responses may vary slightly due to model behavior
+* Simple interaction model
+* Clear feedback states
+* Guided navigation
 
 ---
 
@@ -245,13 +245,21 @@ Backend/
 
 ---
 
+## ⚠️ Assumptions
+
+* Users have basic navigation understanding
+* Internet connectivity is available
+* AI outputs may vary slightly due to model behavior
+
+---
+
 ## 💡 Key Highlights
 
-* Entire interaction system is **AI-driven**
-* No hardcoded learning paths
-* Simulation-based learning approach
-* Dynamic question & option generation
-* Real-time analytics integration
+* Fully AI-driven interaction system
+* No static learning paths
+* Simulation-based decision learning
+* Dynamic question generation
+* Real-time analytics and tracking
 
 ---
 
@@ -259,33 +267,17 @@ Backend/
 
 * Personalized learning paths
 * Multi-language support
-* Offline mode support
 * Advanced analytics dashboard
-
----
-
-## 📌 Conclusion
-
-This project demonstrates how AI can transform static educational systems into **interactive, decision-based learning environments** with real-world applicability.
+* Offline capability
 
 ---
 
 ## 🎥 Demo
 
-
-
-
-
 https://github.com/user-attachments/assets/aa153885-0885-49ed-8a47-0cc5b468bc7d
-
-
-
-
-
-
 
 ---
 
 ## 👨‍💻 Author
 
-Rohan R
+**Rohan R**

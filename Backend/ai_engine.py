@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import requests
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from prompts import STEP_PROMPT, EXPLAIN_PROMPT, CHAT_PROMPT
 from utils import logger, format_steps
 
@@ -10,31 +10,20 @@ from utils import logger, format_steps
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-PRIMARY_MODEL = "meta-llama/llama-3-8b-instruct:free"
-FALLBACK_MODEL = "mistralai/mixtral-8x7b-instruct"
+PRIMARY_MODEL = "mistralai/mixtral-8x7b-instruct"
+FALLBACK_MODEL = "openai/gpt-3.5-turbo"
 
+HEADERS = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json",
+    "X-Title": "Election Learning Assistant",
+}
 
-def run_ai(
-    prompt: str, system_prompt: str = "", model: str = PRIMARY_MODEL, retries: int = 1
-) -> Optional[str]:
-    """
-    Executes a fresh prompt via OpenRouter with model fallback.
-    Ensures no global state affects the request or response.
-    """
-    print(f"DEBUG [run_ai]: Initializing request with model={model}")
-    print(f"DEBUG [run_ai]: Prompt fragment: '{prompt[:50]}...'")
-
+def run_ai(prompt: str, system_prompt: str = "", model: str = PRIMARY_MODEL, retries: int = 1) -> Optional[str]:
     if not OPENROUTER_API_KEY:
-        logger.error("AI Configuration Error: OPENROUTER_API_KEY is missing.")
+        logger.error("API Key missing.")
         return None
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "X-Title": "Election Learning Assistant",
-    }
-
-    # Always initialize fresh messages list
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
@@ -43,96 +32,67 @@ def run_ai(
     payload = {
         "model": model,
         "messages": messages,
-        "temperature": 0.3,  # Slight temperature for variety
-        "max_tokens": 400,
-        "response_format": {"type": "json_object"}
-        if "JSON" in (system_prompt or "")
-        else None,
+        "temperature": 0.1,
+        "max_tokens": 500,
+        "response_format": {"type": "json_object"} if "JSON" in system_prompt else None,
     }
 
     try:
-        # Use direct requests.post to avoid any session/cookie caching issues
-        response = requests.post(BASE_URL, headers=headers, json=payload, timeout=20)
-        response.raise_for_status()
-
-        result_json = response.json()
-        content = result_json["choices"][0]["message"]["content"].strip()
-
-        print(f"DEBUG [run_ai]: Successfully received content length: {len(content)}")
-        return content
-
-    except Exception as e:
-        logger.warning(f"AI Warning: Model {model} failed - {e}")
+        response = requests.post(BASE_URL, headers=HEADERS, json=payload, timeout=15)
+        if response.status_code != 200:
+            raise Exception(f"AI Provider error: {response.status_code}")
+        return response.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
         if retries > 0:
-            print(f"DEBUG [run_ai]: Retrying with fallback model...")
             return run_ai(prompt, system_prompt, model=FALLBACK_MODEL, retries=0)
-
-        logger.error(f"AI Error: All attempts failed.")
         return None
 
-
-def generate_steps_logic(context: str) -> List[str]:
-    """Orchestrates step generation with structured JSON instructions."""
-    system = (
-        "You are an AI assistant that generates step-by-step instructions for election-related processes in India. "
-        "STRICT RULE: Only generate steps based on the given user input. "
-        "If the input is unclear, vague (like 'hi', 'hello', 'test'), or unrelated to Indian elections, "
-        "respond with guidance asking the user to provide a valid query. "
-        "DO NOT assume context or default to a generic voting process if the input is not related. "
-        'Output ONLY JSON in this format: {"steps": ["Step 1", "Step 2", ...]} '
-        "Max 6 steps. Each step must be a short physical action (max 10 words)."
+def generate_steps_logic(context: str) -> List[Dict[str, str]]:
+    """
+    Generates high-quality, context-aware simulation steps in the format:
+    [{ "title": "...", "description": "...", "type": "..." }]
+    """
+    system_prompt = (
+        "You are an Indian Election Simulation Engine. "
+        "Output ONLY JSON in this format: "
+        '{"steps": [{"title": "Action", "description": "Detail", "type": "info|error|success"}]} '
+        "CONTEXT-AWARE RULES: "
+        "1. If the input describes a WRONG action, return 3-5 steps: "
+        "Action taken -> Result -> Problem caused -> System failure -> Correction suggestion. "
+        "2. If the input is CORRECT, return 3-5 steps: "
+        "Progression -> Verification -> Confirmation -> Success status. "
+        "Each title must be max 8 words. Each description max 15 words."
     )
-    raw = run_ai(STEP_PROMPT.format(context=context), system_prompt=system)
 
+    raw = run_ai(f"Generate simulation steps for: {context}", system_prompt=system_prompt)
+    
     try:
         if raw:
             data = json.loads(raw)
             steps = data.get("steps", [])
-            print(f"DEBUG [generate_steps_logic]: Parsed {len(steps)} steps from JSON")
-            return format_steps(steps)
+            if len(steps) >= 3:
+                print("Generated Steps:", steps)
+                return steps
     except Exception as e:
-        print(f"DEBUG [generate_steps_logic]: JSON Parse Error: {e}")
+        logger.error(f"Logic error: {e}")
 
-    # Fallback list if AI completely fails
+    # Fallback to ensure consistency (Minimum 3 steps)
     return [
-        "Enter official portal",
-        "Verify ID details",
-        "Submit application",
-        "Wait for confirmation",
+        {"title": "Initialize Process", "description": "Connecting to the official election database.", "type": "info"},
+        {"title": "Analyze Input", "description": "Processing your requested action against ECI guidelines.", "type": "info"},
+        {"title": "Action Outcome", "description": "Follow official procedures for voter registration.", "type": "success"}
     ]
-
 
 def explain_step_logic(step: str) -> List[str]:
-    """Orchestrates step explanation with bullet point enforcement."""
-    system = (
-        "You are an election mentor. Output ONLY short bullet points starting with '-'."
-    )
+    system = "Output ONLY bullet points starting with '-'."
     raw = run_ai(EXPLAIN_PROMPT.format(step=step), system_prompt=system)
-
-    if not raw:
-        return ["Process verified by ECI.", "Ensures transparency."]
-
-    lines = [
-        line.replace("- ", "").strip()
-        for line in raw.split("\n")
-        if line.strip().startswith("-")
-    ]
-    print(f"DEBUG [explain_step_logic]: Formatted {len(lines)} bullet points")
-    return lines[:5]
-
+    if not raw: return ["Standard ECI verification step."]
+    return [line.replace("- ", "").strip() for line in raw.split("\n") if line.strip().startswith("-")]
 
 def chat_reply_logic(message: str) -> str:
-    """Orchestrates mentor chat with fresh responses."""
-    system = 'You are a helpful election mentor. Output JSON: {"answer": "text", "confidence": "high|low"}'
+    system = 'Output JSON: {"answer": "text"}'
     raw = run_ai(CHAT_PROMPT.format(message=message), system_prompt=system)
-
     try:
-        if raw:
-            data = json.loads(raw)
-            answer = data.get("answer", raw)
-            print(f"DEBUG [chat_reply_logic]: Extracted answer length: {len(answer)}")
-            return answer
-    except Exception as e:
-        print(f"DEBUG [chat_reply_logic]: JSON Parse Error: {e}")
-
-    return raw if raw else "I'm currently here to help with your election questions."
+        if raw: return json.loads(raw).get("answer", raw)
+    except: pass
+    return raw or "How can I assist you today?"

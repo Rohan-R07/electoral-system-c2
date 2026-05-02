@@ -1,4 +1,4 @@
-console.log("test.js loaded");
+console.log("test.js loaded successfully");
 
 const TEST_CONFIG = {
     LATENCY_THRESHOLD: 12000, // 12s for heavy AI tasks
@@ -75,9 +75,10 @@ async function validateEdgeCases() {
     console.groupEnd();
 }
 
-async function runFullAudit() {
+async function runAllTests() {
     console.log("%c🚀 Starting Final System Audit...", "color: #6366f1; font-weight: bold; font-size: 1.1rem;");
     console.log("Environment:", window.location.hostname);
+    console.log("Timestamp:", new Date().toLocaleTimeString());
     console.log("-------------------------------------------");
 
     let totalPassed = 0;
@@ -93,8 +94,12 @@ async function runFullAudit() {
 
     console.log("-------------------------------------------");
     console.log(`🏁 Audit Complete. Core Modules Passed: ${totalPassed}/3`);
+
+    if (window.logUserAction) {
+        window.logUserAction("final_audit_complete", { score: totalPassed });
+    }
 }
 
 // Global scope access
-window.runAllTests = runFullAudit;
-window.runFullAudit = runFullAudit;
+window.runAllTests = runAllTests;
+window.runFullAudit = runAllTests;

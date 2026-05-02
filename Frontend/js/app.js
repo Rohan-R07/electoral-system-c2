@@ -115,7 +115,14 @@ async function handleChoice(option, btn) {
             feedbackMessage.classList.remove('thinking');
         }
 
-        await runSimulation(currentStepData.simulation, true);
+        // Map local simulation data to new contract (title/description)
+        const mappedSim = currentStepData.simulation.map(s => ({
+            title: s.text || s.title,
+            description: s.sub || s.description,
+            type: "info"
+        }));
+
+        await runSimulation(mappedSim, true);
         await showRecap(currentStepData.recap);
 
         setTimeout(() => {
@@ -140,12 +147,11 @@ async function handleChoice(option, btn) {
         feedbackMessage.innerText = "🤔 Analyzing your choice...";
         feedbackMessage.className = "feedback-message error thinking";
 
-        const failureSim = option.simulation || [
-            { text: "Option Selected...", sub: "Processing your decision." },
-            { text: "❌ Invalid Path", sub: "This choice does not align with official procedures." }
-        ];
+        // Fetch dynamic failure simulation from backend
+        const failurePrompt = `User selected '${option.text}' for '${currentStepData.question}'. Show the failure simulation.`;
+        const steps = await window.getSteps(failurePrompt);
 
-        await runSimulation(failureSim, false);
+        await runSimulation(steps, false);
 
         // Call AI for Dynamic Failure Explanation
         try {
@@ -172,23 +178,31 @@ async function handleChoice(option, btn) {
 
 async function runSimulation(steps, isSuccess) {
     simulationLog.innerHTML = "";
+    if (!steps || steps.length === 0) return;
+
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        const animType = window.anim.getAnimationType(step.text);
+        
+        // Contract alignment: title and description
+        const title = step.title || step.text || "Action";
+        const description = step.description || step.sub || "";
+        const type = step.type || (isSuccess ? "info" : "error");
+
+        const animType = window.anim.getAnimationType(title);
         const card = document.createElement("div");
-        card.className = `step-card anim-${animType} ${isSuccess ? '' : 'failure'}`;
+        card.className = `step-card anim-${animType} ${type === 'error' ? 'failure' : ''}`;
         
         let visual = '';
         if (animType === 'download') visual = '<div class="sim-progress-bar"><div class="sim-progress-fill"></div></div>';
-        if (animType === 'spinner') visual = `<i class="fas fa-circle-notch fa-spin sim-spinner ${isSuccess ? '' : 'error'}"></i>`;
+        if (animType === 'spinner') visual = `<i class="fas fa-circle-notch fa-spin sim-spinner ${type === 'error' ? 'error' : ''}"></i>`;
 
         card.innerHTML = `
-            <div class="step-header ${isSuccess ? '' : 'error'}">
-                <i class="fas ${isSuccess ? (animType === 'success-check' ? 'fa-check-circle' : 'fa-cog fa-spin') : 'fa-exclamation-triangle'}"></i>
-                <span>${isSuccess ? animType.toUpperCase() : 'FAILURE ALERT'}</span>
+            <div class="step-header ${type === 'error' ? 'error' : ''}">
+                <i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : (animType === 'success-check' ? 'fa-check-circle' : 'fa-cog fa-spin')}"></i>
+                <span>${type === 'error' ? 'FAILURE ALERT' : animType.toUpperCase()}</span>
             </div>
-            <div class="step-main-text">${step.text}</div>
-            <div class="step-sub-text">${step.sub}</div>
+            <div class="step-main-text">${title}</div>
+            <div class="step-sub-text">${description}</div>
             ${visual}
         `;
         

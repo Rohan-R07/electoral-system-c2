@@ -1,110 +1,65 @@
 # 🗳️ AI-Powered Electoral System Assistant
 
-🔗 **Live Demo:** https://promptvars-challenge-2.web.app/                                                                                        
-🔗 **Backend API (Cloud Run):** https://election-backend-882610711158.asia-south1.run.app                                                                                       
-🎥 **Demo Video:** https://drive.google.com/file/d/1hasMdNUdY3zVUhhGRCfDwW7iu9HqZXhJ/view?usp=sharing
+🔗 **Live Demo:** https://promptvars-challenge-2.web.app/  
+🔗 **Backend API (Cloud Run):** https://election-backend-882610711158.asia-south1.run.app  
+🎥 **Demo Video:** https://drive.google.com/file/d/1xUMRhlmsQEpYmTmJMIqTC4hUzk7JhXt3/view?usp=sharing  
 
 ---
 
 ## 📌 Overview
 
-This project is an **AI-driven electoral learning system** built for **Google Prompt Wars – Challenge 2**, designed to simulate real-world election workflows through **interactive decision-based learning**.
+This project is an **AI-driven electoral learning system** built for **Google Prompt Wars – Challenge 2**.
 
-Instead of static tutorials, the system dynamically generates:
+Instead of relying on static guides, the system transforms electoral procedures into an **interactive, decision-driven simulation experience**.
 
-* Step-by-step electoral processes
-* Context-aware explanations
-* Scenario-based MCQs
-* Consequence-driven simulations
-
-The goal is not just to inform users, but to help them **understand decisions and their outcomes**.
+It focuses on helping users understand **why actions matter**, not just what to do.
 
 ---
 
-## 🎯 Chosen Vertical
+## 🖼️ UI & System Preview
 
-**Civic Tech – Electoral Systems**
 
-The system focuses on:
+### 🔹 Main Simulation Interface (Correct Answer)
+![Correct answer Simulation UI](./assets/simulation-ui.png)
 
-* Voter registration workflows
-* Electoral procedures
-* Decision-making in real-world scenarios
-* Practical civic awareness
+### 🔹 Main Simulation Interface (Wrong Answer)
+![Wrong answer Simulation UI](./assets/decision-flow.png)
 
----
+### 🔹 AI Assistant
+![Chat UI](./assets/chat-ui.png)
 
-## 🧠 Core Idea (How it Works)
-
-### 1. AI Assistant
-
-* Handles open-ended user queries
-* Provides contextual guidance
-* Acts as fallback when users are unsure
+### 🔹 Test Cases
+![Audit UI](./assets/audit.png)
 
 ---
 
-### 2. Simulation-Based Learning Engine
+## 🎯 Problem Statement
 
-This is the core of the system.
+Traditional civic systems are:
 
-Each interaction follows:
+- Static and text-heavy  
+- Lacking real-world simulation  
+- Low in user engagement  
 
-```text
-User Action → AI Evaluation → Outcome Simulation → Explanation
-```
+This system changes that by enabling:
 
-* ✅ Correct decisions → progression
-* ❌ Incorrect decisions → simulated consequences
-
-Example:
-
-```text
-Wrong form selected → system simulates rejection → AI explains correction
-```
-
-This creates a **cause–effect learning loop**, not just Q&A.
+> **User interacts → makes decisions → sees outcomes → learns from consequences**
 
 ---
 
-### 3. AI-Generated Questions & Options
+## 🧠 Core Idea
 
-* Questions are dynamically generated
-* Options are intentionally realistic and ambiguous
-* Prevents memorization and encourages reasoning
+Each interaction follows a structured loop:
 
----
+> **User Action → AI Evaluation → Outcome Simulation → Explanation → Retry**
 
-### 4. Step-Based Guidance System
+### Example
 
-For any user intent:
-
-```text
-Input → AI → Structured steps → Guided completion
-```
-
-Example flows include:
-
-* Registering as a voter
-* Identity verification
-* Form submission
-* Voting process
+> **Wrong form selected → system simulates rejection → AI explains correction → user retries**
 
 ---
 
-### 5. Adaptive Learning Flow
-
-* Wrong answers trigger:
-
-  * Explanation
-  * Simulation
-  * Retry mechanism
-
-The system ensures **understanding before progression**.
-
----
-
-## 🧪 System Architecture
+## ⚙️ System Architecture
 
 ```text
 Frontend (Firebase Hosting)
@@ -113,168 +68,219 @@ Cloud Run (FastAPI Backend)
         ↓
 AI Model (OpenRouter)
         ↓
-Firestore + Analytics (Tracking Layer)
+Firestore (Event Logging) + Firebase Analytics
 ```
 
----
+### Flow Explanation
 
-## 📊 Tracking & Analytics (Key Strength)
+1. **Frontend (Firebase Hosting)**
+   - Handles UI, user interactions, and API calls
 
-The system includes **real-time behavior tracking** using Firebase:
+2. **Backend (Cloud Run – FastAPI)**
+   - Processes requests
+   - Manages AI prompts and response formatting
 
-### Firestore Event Logging
+3. **AI Layer (OpenRouter Models)**
+   - Generates:
+     - Steps
+     - Explanations
+     - Chat responses
 
-Each interaction logs:
-
-* Step number
-* Selected option
-* Correct / incorrect decision
-* Timestamp
-* User metadata
-
-### Analytics Events
-
-* `app_loaded`
-* `option_selected`
-* `chat_used`
-* `journey_completed`
-
-This enables:
-
-* Behavioral analysis
-* Learning pattern tracking
-* Real-world system observability
+4. **Data Layer**
+   - **Firestore** → logs user interactions
+   - **Firebase Analytics** → tracks user behavior
 
 ---
 
-## 🧠 Challenge Expectations Alignment
 
-### ✔ Smart, Dynamic Assistant
+## 🧠 Key Components
 
-* Fully AI-driven responses
-* No hardcoded flows
-
----
-
-### ✔ Logical Decision Making
-
-* Outcome-based MCQ system
-* Context-aware evaluation
+### 1. AI Assistant
+- Handles open-ended queries  
+- Provides contextual guidance  
+- Acts as fallback support  
 
 ---
 
-### ✔ Effective Use of Google Services
-
-* Firebase Hosting
-* Firebase Analytics
-* Firebase Firestore (event tracking)
-* Google Cloud Run
+### 2. Simulation Engine
+- Generates workflows dynamically  
+- Evaluates user decisions  
+- Simulates real-world outcomes  
 
 ---
 
-### ✔ Real-World Usability
-
-* Based on actual electoral processes
-* Simulates real consequences
-* Practical for civic learning
+### 3. Dynamic Question System
+- AI-generated realistic options  
+- Prevents memorization  
+- Encourages reasoning  
 
 ---
 
-### ✔ Clean & Maintainable Code
+### 4. Explanation Engine
+- Explains why answers are correct/incorrect  
+- Guides user toward correct path  
 
-* Modular structure
-* Centralized API handling
-* Structured error management
+---
+
+### 5. Audit & Testing System 🚀
+
+Built-in system validation feature that checks:
+
+- Steps API  
+- Explain API  
+- Chat API  
+- Edge cases (null/empty inputs)  
+- Performance latency  
+
+## 🧪 Sample Output
+
+### 🔹 Steps API Response
+
+```json
+{
+  "steps": [
+    {
+      "title": "Visit Official Portal",
+      "description": "Go to the official voter registration website.",
+      "type": "info"
+    },
+    {
+      "title": "Fill Form 6",
+      "description": "Enter personal details for new voter registration.",
+      "type": "info"
+    },
+    {
+      "title": "Submit Documents",
+      "description": "Upload proof of identity and address.",
+      "type": "info"
+    },
+    {
+      "title": "Verification Complete",
+      "description": "Your application is under review.",
+      "type": "success"
+    }
+  ]
+}
+```
+---
+
+## 📊 Tracking & Analytics
+
+### 🔹 Firestore Logging
+
+Tracks:
+
+- Step number  
+- Selected option  
+- Correct/incorrect decision  
+- Timestamp  
+
+---
+
+### 🔹 Firebase Analytics
+
+Tracked events:
+
+- `app_loaded`  
+- `option_selected`  
+- `chat_used`  
+- `journey_completed`  
+
+---
+
+## 🧪 Testing Strategy
+
+- Automated API validation  
+- Edge case handling  
+- Performance observation  
+- Retry and fallback mechanisms  
 
 ---
 
 ## ⚙️ Engineering Principles
 
 ### 🔹 Code Quality
+- Modular structure  
+- Clean API handling  
+- Reusable components  
 
-* Modular API design
-* Reusable utilities
-* Clear separation of concerns
+### 🔹 Robustness
+- Handles invalid inputs gracefully  
+- Prevents system crashes  
 
----
+### 🔹 Performance
+- Optimized API calls  
+- Controlled latency  
 
 ### 🔹 Security
-
-* API keys managed via environment variables
-* No sensitive backend exposure
-
----
-
-### 🔹 Efficiency
-
-* Optimized API calls
-* Timeout handling
-* Response fallback logic
-
----
-
-### 🔹 Testing
-
-* API validation via test suite
-* Edge case handling
-* Performance observation
-
----
+- API keys managed via environment variables  
+- No sensitive exposure  
 
 ### 🔹 Accessibility
-
-* Simple interaction model
-* Clear feedback states
-* Guided navigation
+- Clear feedback states  
+- Guided interaction flow  
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-Frontend/
-  index.html
-  js/
-  css/
-
-Backend/
-  app.py
-  ai_engine.py
-  requirements.txt
+project-root/
+│
+├── Frontend/
+│   ├── index.html
+│   ├── css/
+│   │   └── styles.css
+│   ├── js/
+│   │   ├── api.js
+│   │   ├── main.js
+│   │   └── test.js
+│   └── assets/
+│       ├── simulation-ui.png
+│       ├── decision-flow.png
+│       └── chat-ui.png
+│
+├── Backend/
+│   ├── app.py
+│   ├── ai_engine.py
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+└── README.md
 ```
+---
+
+## 🧠 Design Philosophy
+
+> **Understanding comes from interaction, not instruction.**
 
 ---
 
-## ⚠️ Assumptions
+## 💡 Highlights
 
-* Users have basic navigation understanding
-* Internet connectivity is available
-* AI outputs may vary slightly due to model behavior
-
----
-
-## 💡 Key Highlights
-
-* Fully AI-driven interaction system
-* No static learning paths
-* Simulation-based decision learning
-* Dynamic question generation
-* Real-time analytics and tracking
+- Fully AI-driven system  
+- Simulation-based learning  
+- Dynamic question generation  
+- Real-time analytics  
+- Built-in audit system  
 
 ---
 
 ## 🔮 Future Improvements
 
-* Personalized learning paths
-* Multi-language support
-* Advanced analytics dashboard
-* Offline capability
+- Personalized learning paths  
+- Multi-language support  
+- Advanced analytics dashboard  
+- Offline capability  
 
 ---
 
 ## 🎥 Demo
 
-https://github.com/user-attachments/assets/aa153885-0885-49ed-8a47-0cc5b468bc7d
+
+
+https://github.com/user-attachments/assets/cd86f40b-a37b-4db2-acc0-f1e183c5d062
+
 
 ---
 

@@ -96,6 +96,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDypFNOFBwp0cxPkD1_Uczmv7Cq2ehBgks",
@@ -107,24 +108,55 @@
             measurementId: "G-Y2X56GTM7R"
         };
 
+        // Unique Session ID for interaction grouping
+        const sessionId = "sess_" + Math.random().toString(36).substr(2, 9);
 
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
+        try {
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+            const db = getFirestore(app);
 
-        window.analytics = analytics;
+            // Expose globally for modular JS access
+            window.analytics = analytics;
+            window.db = db;
+            window.logEvent = logEvent;
 
-        console.log("✅ Firebase Analytics Initialized");
+            /**
+             * Enhanced Telemetry Utility
+             * Unified logging to Firestore (audit log) and Analytics (metrics)
+             */
+            window.logUserAction = async (action, data = {}) => {
+                const payload = {
+                    action,
+                    sessionId,
+                    ...data,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent
+                };
 
-        // TEST EVENT
-        logEvent(analytics, "app_loaded");
-        console.log("📊 Event Sent: app_loaded");
+                try {
+                    // 1. Fire and forget to Google Analytics
+                    logEvent(analytics, action, { session_id: sessionId, ...data });
+                    
+                    // 2. Persist to Firestore Interactions collection
+                    await addDoc(collection(db, "interactions"), payload);
+                    
+                    console.log(`📊 [Telemetry] ${action} logged.`);
+                } catch (err) {
+                    console.warn("⚠️ Telemetry deferred:", err.message);
+                }
+            };
 
-        // TEST BUTTON
-        window.testAnalytics = () => {
-            logEvent(analytics, "manual_test");
-            console.log("📊 Manual Event Sent");
-        };
-    </script>l
+            // Initial load event
+            window.logUserAction("session_start", { page: "home" });
+
+            // Manual Test Function
+            window.testAnalytics = () => window.logUserAction("manual_verify", { test: true });
+
+        } catch (error) {
+            console.error("❌ Firebase Failed to load:", error);
+        }
+    </script>
 
     <script type="module" src="js/app.js"></script>
     <script type="module" src="js/chat.js"></script>

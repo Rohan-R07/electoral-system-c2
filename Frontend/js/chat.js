@@ -27,6 +27,11 @@ const sendMessage = async () => {
         const response = await getChat(text);
         console.log("Chat: Received response ->", response);
 
+        // Telemetry: Chat Used
+        if (window.logUserAction) {
+            window.logUserAction('chat_used', { queryLength: text.length });
+        }
+
         // 5. Remove indicator and add actual response
         removeMessage(typingId);
         const aiMsgId = addMessage("", "ai");

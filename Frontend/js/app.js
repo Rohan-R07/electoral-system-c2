@@ -79,13 +79,13 @@ async function handleChoice(option, btn) {
     if (isProcessing) return;
     isProcessing = true;
     
-    // Analytics: Option Selected
-    if (window.logEvent && window.analytics) {
-        window.logEvent(window.analytics, 'option_selected', {
+    // Telemetry: Option Selected
+    if (window.logUserAction) {
+        window.logUserAction('option_selected', {
             step: currentStepIndex + 1,
-            option: option.text
+            option: option.text,
+            isCorrect: option.correct
         });
-        console.log(`📊 Analytics Event: option_selected (Step ${currentStepIndex + 1}) - ${option.text}`);
     }
 
     const buttons = optionsContainer.querySelectorAll(".option-btn");
@@ -97,10 +97,9 @@ async function handleChoice(option, btn) {
     });
 
     if (option.correct) {
-        // Analytics: Correct Answer
-        if (window.logEvent && window.analytics) {
-            window.logEvent(window.analytics, 'step_correct', { step: currentStepIndex + 1 });
-            console.log(`📊 Analytics Event: step_correct (Step ${currentStepIndex + 1})`);
+        // Telemetry: Correct Answer
+        if (window.logUserAction) {
+            window.logUserAction('correct_answer', { step: currentStepIndex + 1 });
         }
 
         anim.pop(btn);
@@ -134,10 +133,9 @@ async function handleChoice(option, btn) {
         }, 2000);
 
     } else {
-        // Analytics: Wrong Answer
-        if (window.logEvent && window.analytics) {
-            window.logEvent(window.analytics, 'step_failed', { step: currentStepIndex + 1 });
-            console.log(`📊 Analytics Event: step_failed (Step ${currentStepIndex + 1})`);
+        // Telemetry: Wrong Answer
+        if (window.logUserAction) {
+            window.logUserAction('wrong_answer', { step: currentStepIndex + 1 });
         }
 
         anim.shake(btn);
@@ -219,10 +217,9 @@ async function showFinalSuccess() {
     appContainer.classList.add('completed-mode');
     simulationLog.innerHTML = "";
 
-    // Analytics: Journey Completed
-    if (window.logEvent && window.analytics) {
-        window.logEvent(window.analytics, 'journey_completed');
-        console.log("Analytics: journey_completed");
+    // Telemetry: Journey Completed
+    if (window.logUserAction) {
+        window.logUserAction('journey_completed');
     }
 
     const overlay = document.createElement("div");

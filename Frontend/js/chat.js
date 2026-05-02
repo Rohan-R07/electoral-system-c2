@@ -1,56 +1,92 @@
 /**
- * Main function to handle user message sending
+ * Election Learning Assistant - Chat Module
+ * 
+ * Manages the AI mentor conversation UI and typing animations.
  */
-const sendMessage = async () => {
-    const input = document.getElementById("chat-input");
-    const sendBtn = document.getElementById("chat-send");
-    
-    const text = input.value.trim();
-    if (!text || sendBtn.disabled) return;
 
-    // 1. UI Reset
-    input.value = "";
-    sendBtn.disabled = true;
-    console.log("Chat: Sending message ->", text);
-
-    // 2. Add User Bubble
-    addMessage(text, "user");
-
-    // 3. Add temporary "Thinking..." bubble
-    const typingId = addMessage("Thinking...", "ai typing-indicator");
-
-    try {
-        // 4. Fetch from Backend (Global function)
-        const response = await window.getChat(text);
-        console.log("Chat: Received response ->", response);
-
-        // Telemetry: Chat Used
-        if (window.logUserAction) {
-            window.logUserAction('chat_used', { queryLength: text.length });
-        }
-
-        // 5. Remove indicator and add actual response
-        removeMessage(typingId);
-        const aiMsgId = addMessage("", "ai");
-        
-        // 6. Typing Effect (Global anim)
-        await typeMessage(aiMsgId, response);
-
-    } catch (error) {
-        console.error("Chat Error:", error);
-        removeMessage(typingId);
-        addMessage("AI is unavailable, please try again.", "ai error");
-    } finally {
-        sendBtn.disabled = false;
-        input.focus();
-    }
+// DOM Elements
+const chatElements = {
+    inputField: document.getElementById("chat-input"),
+    sendButton: document.getElementById("chat-send"),
+    messageBox: document.getElementById("chat-messages")
 };
 
 /**
- * DOM Helper: Add a message bubble
+ * Debounce helper to prevent rapid API spamming
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+/**
+ * Handles the logic for sending a user message
+ */
+async function processUserMessage() {
+    const text = chatElements.inputField.value.trim();
+    if (!text || chatElements.sendButton.disabled) return;
+
+    // UI Feedback
+    chatElements.inputField.value = "";
+    chatElements.sendButton.disabled = true;
+    console.log("Chat: Requesting response for ->", text);
+
+    // 1. Render User Message
+    addMessage(text, "user");
+
+    // 2. Render temporary "Thinking..." bubble
+    const typingIndicatorId = addMessage("Thinking...", "ai typing-indicator");
+
+    try {
+        // 3. Fetch from Backend (Global API function)
+        const response = await window.getChat(text);
+
+        // 4. Remove indicator and add final AI message
+        removeMessage(typingIndicatorId);
+        const aiMessageId = addMessage("", "ai");
+        
+        // 5. Trigger Typing Effect
+        await typeMessage(aiMessageId, response);
+
+        if (window.logUserAction) {
+            window.logUserAction('chat_query', { length: text.length });
+        }
+
+    } catch (error) {
+        console.error("Chat Error:", error);
+        removeMessage(typingIndicatorId);
+        addMessage("The AI mentor is temporarily busy. Please try again in a few seconds.", "ai error");
+    } finally {
+        chatElements.sendButton.disabled = false;
+        chatElements.inputField.focus();
+    }
+}
+
+// Event Bindings with Debounce
+const debouncedSendMessage = debounce(processUserMessage, 300);
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (chatElements.sendButton) {
+        chatElements.sendButton.onclick = debouncedSendMessage;
+    }
+    if (chatElements.inputField) {
+        chatElements.inputField.onkeypress = (e) => { 
+            if (e.key === "Enter") debouncedSendMessage(); 
+        };
+    }
+});
+
+/**
+ * Creates and appends a message bubble
  */
 function addMessage(text, type) {
-    const chatBox = document.getElementById("chat-messages");
     const id = "msg-" + Math.random().toString(36).substr(2, 9);
     
     const wrapper = document.createElement("div");
@@ -60,18 +96,17 @@ function addMessage(text, type) {
     const bubble = document.createElement("div");
     bubble.className = `msg-bubble ${type}`;
     bubble.id = id;
-    // Basic formatting for non-typed messages (errors/thinking)
     bubble.innerHTML = text.replace(/\n/g, "<br>");
 
     wrapper.appendChild(bubble);
-    chatBox.appendChild(wrapper);
+    chatElements.messageBox.appendChild(wrapper);
     
-    chatBox.scrollTop = chatBox.scrollHeight;
+    chatElements.messageBox.scrollTop = chatElements.messageBox.scrollHeight;
     return id;
 }
 
 /**
- * DOM Helper: Remove a specific message
+ * Removes a specific bubble (indicator)
  */
 function removeMessage(id) {
     const wrapper = document.getElementById("wrapper-" + id);
@@ -79,10 +114,9 @@ function removeMessage(id) {
 }
 
 /**
- * Effect: Character-by-character rendering
+ * Types text character-by-character into a bubble
  */
 async function typeMessage(id, text) {
-    const chatBox = document.getElementById("chat-messages");
     const element = document.getElementById(id);
     if (!element) return;
 
@@ -94,13 +128,9 @@ async function typeMessage(id, text) {
         const interval = setInterval(() => {
             if (i < text.length) {
                 const char = text[i];
-                if (char === "\n") {
-                    element.innerHTML += "<br>";
-                } else {
-                    element.innerHTML += char;
-                }
+                element.innerHTML += (char === "\n") ? "<br>" : char;
                 i++;
-                chatBox.scrollTop = chatBox.scrollHeight;
+                chatElements.messageBox.scrollTop = chatElements.messageBox.scrollHeight;
             } else {
                 clearInterval(interval);
                 element.classList.remove('typing');
@@ -109,19 +139,6 @@ async function typeMessage(id, text) {
         }, 20);
     });
 }
-
-// Setup listeners when script loads
-document.addEventListener("DOMContentLoaded", () => {
-    const input = document.getElementById("chat-input");
-    const sendBtn = document.getElementById("chat-send");
-    
-    if (sendBtn) sendBtn.onclick = sendMessage;
-    if (input) {
-        input.onkeypress = (e) => { 
-            if (e.key === "Enter") sendMessage(); 
-        };
-    }
-});
 
 // Global scope access
 window.chat = {

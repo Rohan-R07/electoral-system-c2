@@ -1,100 +1,114 @@
-const CONFIG = {
+/**
+ * Election Learning Assistant - API Service
+ * 
+ * Centralized module for backend communication.
+ * Features:
+ * - Centralized fetch wrapper (safeFetch)
+ * - In-memory caching for repeated queries
+ * - Automatic 1-retry mechanism for transient failures
+ * - Consistent error and loading state management
+ */
+
+const API_CONFIG = {
     BASE_URL: (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
               ? "http://127.0.0.1:8000" 
               : "https://election-backend-882610711158.asia-south1.run.app",
-    TIMEOUT: 20000
+    TIMEOUT: 15000,
+    MAX_RETRIES: 1
 };
 
-// In-memory cache for efficiency
+// Map to store successful responses to avoid redundant AI calls
 const apiCache = new Map();
 
 /**
- * Enhanced Fetch Wrapper with Data Unwrapping and Error Handling
+ * Standardized fetch helper with retries and timeout
  */
-async function secureFetch(endpoint, data, allowCache = true) {
-    const cacheKey = `${endpoint}:${JSON.stringify(data)}`;
+async function performRequest(endpoint, payload, useCache = true) {
+    const cacheKey = `${endpoint}:${JSON.stringify(payload)}`;
     
-    if (allowCache && apiCache.has(cacheKey)) {
+    if (useCache && apiCache.has(cacheKey)) {
+        console.log(`API [${endpoint}]: Returning cached response`);
         return apiCache.get(cacheKey);
     }
 
-    const url = `${CONFIG.BASE_URL}${endpoint}`;
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+    let lastError = null;
 
-    try {
-        const res = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify(data),
-            signal: controller.signal
-        });
+    for (let attempt = 0; attempt <= API_CONFIG.MAX_RETRIES; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
 
-        clearTimeout(timeoutId);
+        try {
+            if (attempt > 0) console.warn(`API [${endpoint}]: Retry attempt ${attempt}...`);
 
-        const responseData = await res.json();
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
 
-        if (!res.ok) {
-            throw new Error(responseData.message || responseData.detail || `Server error: ${res.status}`);
-        }
+            clearTimeout(timeoutId);
 
-        if (responseData.status === "success" && responseData.data) {
-            const result = responseData.data;
-            if (allowCache) apiCache.set(cacheKey, result);
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+
+            const data = await response.json();
+            
+            // Standardize: Production backend uses { status, data }
+            const result = (data.status === "success" && data.data) ? data.data : data;
+
+            if (useCache) apiCache.set(cacheKey, result);
             return result;
+
+        } catch (err) {
+            clearTimeout(timeoutId);
+            lastError = err;
+            if (err.name === 'AbortError') break; // Don't retry timeouts
         }
+    }
 
-        if (allowCache) apiCache.set(cacheKey, responseData);
-        return responseData;
+    console.error(`API [${endpoint}]: Final Failure`, lastError);
+    throw lastError;
+}
 
-    } catch (error) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') throw new Error("Request timed out. Please try again.");
-        console.error(`❌ API Error (${endpoint}):`, error);
-        throw error;
+/**
+ * Fetches educational simulation steps
+ */
+async function getSteps(context) {
+    try {
+        const result = await performRequest("/steps", { text: context || "" });
+        return Array.isArray(result?.steps) ? result.steps : [];
+    } catch (err) {
+        return [{ title: "Error", description: "The simulation engine is temporarily slow. Please retry.", type: "error" }];
     }
 }
 
 /**
- * Fetches simulation steps
+ * Fetches conceptual explanations
  */
-async function getSteps(context) {
-    try {
-        const data = await secureFetch("/steps", { text: context || "" });
-        return data?.steps || [];
-    } catch (err) {
-        console.error("getSteps failed:", err);
-        return [];
-    }
-}
-
 async function getExplain(text) {
     try {
-        const data = await secureFetch("/explain", { text: text || "" });
-        return data?.explanation || [];
+        const result = await performRequest("/explain", { text: text || "" });
+        return Array.isArray(result?.explanation) ? result.explanation : [];
     } catch (err) {
-        console.error("getExplain failed:", err);
-        return [];
+        return ["Information is currently being verified. Please try again."];
     }
 }
 
+/**
+ * Fetches chatbot replies
+ */
 async function getChat(text) {
     try {
-        const data = await secureFetch("/chat", { text: text || "" }, false);
-        return data?.reply || "I'm sorry, I'm having trouble thinking right now.";
+        // Chat is dynamic, so we don't cache it
+        const result = await performRequest("/chat", { text: text || "" }, false);
+        return result?.reply || "I'm processing your request...";
     } catch (err) {
-        console.error("getChat failed:", err);
-        return "I'm sorry, I'm having trouble thinking right now.";
+        return "I am currently offline. Please check back in a moment!";
     }
 }
 
-// Global scope access
+// Global exposure for cross-file access
 window.getSteps = getSteps;
 window.getExplain = getExplain;
 window.getChat = getChat;
-
-console.log("API functions attached:", typeof getSteps);

@@ -1,236 +1,256 @@
-const appContainer = document.querySelector(".app-container");
-const sidebar = document.querySelector(".sidebar.choices-panel");
-const simulationPanel = document.querySelector(".main-content.simulation-panel");
-const chatPanel = document.querySelector(".sidebar.chat-panel");
+/**
+ * Main Application Logic
+ * Orchestrates the MCQ journey, simulation sequences, and mentor feedback.
+ */
 
-const scenarioTitle = document.getElementById("scenario-title");
-const scenarioText = document.getElementById("scenario-text");
-const mentorHint = document.getElementById("mentor-hint");
-const optionsContainer = document.getElementById("options-container");
-const simulationLog = document.getElementById("simulation-log");
-const feedbackMessage = document.getElementById("feedback-message");
-const progressBar = document.getElementById("progress");
+const elements = {
+    appContainer: document.querySelector(".app-container"),
+    sidebar: document.querySelector(".sidebar.choices-panel"),
+    simulationPanel: document.querySelector(".main-content.simulation-panel"),
+    scenarioTitle: document.getElementById("scenario-title"),
+    scenarioText: document.getElementById("scenario-text"),
+    mentorHint: document.getElementById("mentor-hint"),
+    optionsContainer: document.getElementById("options-container"),
+    simulationLog: document.getElementById("simulation-log"),
+    feedbackMessage: document.getElementById("feedback-message"),
+    progressBar: document.getElementById("progress")
+};
 
 let currentStepIndex = 0;
-let currentStepData = null; 
-let isProcessing = false;
+let activeStepData = null; 
+let isActionPending = false;
 
-function init() {
-    renderStep();
+/**
+ * Initialize application lifecycle
+ */
+function initializeApp() {
+    loadNextStepModule();
 }
 
-function shuffleArray(arr) {
-    return [...arr].sort(() => Math.random() - 0.5);
-}
-
-function getRandom(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-async function renderStep() {
-    isProcessing = false;
+/**
+ * Selects a random question set and renders the UI for the current step
+ */
+async function loadNextStepModule() {
+    isActionPending = false;
     
-    const step = window.STEP_POOL[currentStepIndex];
-    if (!step) return;
+    const stepConfig = window.STEP_POOL[currentStepIndex];
+    if (!stepConfig) return;
 
-    currentStepData = getRandom(step.questionSets);
+    // Pick a randomized variant for this module
+    activeStepData = stepConfig.questionSets[Math.floor(Math.random() * stepConfig.questionSets.length)];
 
-    const cards = simulationLog.querySelectorAll('.step-card, .recap-card');
-    cards.forEach(c => { c.style.opacity = '0'; c.style.transform = 'scale(0.95)'; });
+    // Reset Simulation Panel with transition
+    const existingCards = elements.simulationLog.querySelectorAll('.step-card, .recap-card');
+    existingCards.forEach(card => card.style.opacity = '0');
     
     setTimeout(() => {
-        simulationLog.innerHTML = `<div class="empty-state"><i class="fas fa-route"></i><p>Ready for Step ${currentStepIndex + 1}...</p></div>`;
+        elements.simulationLog.innerHTML = `
+            <div class="empty-state" role="status">
+                <i class="fas fa-route"></i>
+                <p>Preparing Step ${currentStepIndex + 1}...</p>
+            </div>`;
     }, 300);
 
-    scenarioTitle.innerText = `Step ${currentStepIndex + 1}: ${step.title}`;
-    scenarioText.innerText = currentStepData.question;
-    mentorHint.innerText = currentStepData.hint;
+    // Update Header Content
+    elements.scenarioTitle.innerText = `Step ${currentStepIndex + 1}: ${stepConfig.title}`;
+    elements.scenarioText.innerText = activeStepData.question;
+    elements.mentorHint.innerText = activeStepData.hint;
     
-    const progress = (currentStepIndex / window.STEP_POOL.length) * 100;
-    progressBar.style.width = `${progress}%`;
+    // Refresh Progress Bar
+    const progressPercent = (currentStepIndex / window.STEP_POOL.length) * 100;
+    elements.progressBar.style.width = `${progressPercent}%`;
+    elements.progressBar.setAttribute('aria-valuenow', Math.round(progressPercent));
 
-    const shuffledOptions = shuffleArray(currentStepData.options);
+    // Clear and Render Choice Options
+    window.anim.clearContainer(elements.optionsContainer);
+    elements.feedbackMessage.innerText = "";
+    elements.feedbackMessage.className = "feedback-message";
 
-    window.anim.clearContainer(optionsContainer);
-    feedbackMessage.innerText = "";
-    feedbackMessage.className = "feedback-message";
-
-    shuffledOptions.forEach(opt => {
-        const btn = document.createElement("button");
-        btn.className = "option-btn";
-        btn.innerHTML = `<i class="far fa-circle"></i> <span>${opt.text}</span>`;
-        btn.onclick = () => handleChoice(opt, btn);
-        optionsContainer.appendChild(btn);
+    activeStepData.options.forEach(option => {
+        const optionBtn = document.createElement("button");
+        optionBtn.className = "option-btn";
+        optionBtn.setAttribute('aria-label', `Choose: ${option.text}`);
+        optionBtn.innerHTML = `<i class="far fa-circle" aria-hidden="true"></i> <span>${option.text}</span>`;
+        optionBtn.onclick = () => handleUserSelection(option, optionBtn);
+        elements.optionsContainer.appendChild(optionBtn);
     });
 
-    window.anim.fadeIn(scenarioTitle, 0);
-    window.anim.fadeIn(scenarioText, 100);
-    window.anim.fadeIn(document.getElementById("mentor-box"), 200);
-    const buttons = optionsContainer.querySelectorAll(".option-btn");
-    buttons.forEach((b, i) => window.anim.fadeIn(b, 300 + (i * 50)));
+    // Staggered entry animations
+    window.anim.fadeIn(elements.scenarioTitle, 0);
+    window.anim.fadeIn(elements.scenarioText, 100);
 }
 
-async function handleChoice(option, btn) {
-    if (isProcessing) return;
-    isProcessing = true;
+/**
+ * Processes the user's MCQ choice
+ */
+async function handleUserSelection(option, btn) {
+    if (isActionPending) return;
+    isActionPending = true;
     
-    // Telemetry: Option Selected
+    // Record telemetry metrics
+    if (window.sessionState) {
+        window.sessionState.totalInteractions++;
+        option.correct ? window.sessionState.correctAnswers++ : window.sessionState.wrongAnswers++;
+    }
+
     if (window.logUserAction) {
-        window.logUserAction('option_selected', {
-            step: currentStepIndex + 1,
-            option: option.text,
-            isCorrect: option.correct
+        window.logUserAction('interaction_choice', { 
+            step: currentStepIndex + 1, 
+            label: option.text, 
+            isCorrect: option.correct 
         });
     }
 
-    const buttons = optionsContainer.querySelectorAll(".option-btn");
-    
-    // Disable all buttons immediately
-    buttons.forEach(b => {
+    // Lock UI during feedback
+    const allButtons = elements.optionsContainer.querySelectorAll(".option-btn");
+    allButtons.forEach(b => {
         b.disabled = true;
         if (b !== btn) b.style.opacity = "0.4";
     });
 
     if (option.correct) {
-        // Telemetry: Correct Answer
-        if (window.logUserAction) {
-            window.logUserAction('correct_answer', { step: currentStepIndex + 1 });
-        }
-
-        window.anim.pop(btn);
-        btn.classList.add('correct');
-        btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${option.text}</span>`;
-        
-        feedbackMessage.innerText = "✨ Thinking of an explanation...";
-        feedbackMessage.className = "feedback-message success thinking";
-
-        // Call AI for Dynamic Success Explanation
-        try {
-            const prompt = `Explain why selecting '${option.text}' is the correct answer for the question: '${currentStepData.question}' in the context of Indian elections.`;
-            const explanation = await window.getExplain(prompt);
-            feedbackMessage.innerText = explanation[0] || "Correct choice! You're following the right procedure.";
-            feedbackMessage.classList.remove('thinking');
-        } catch (e) {
-            feedbackMessage.innerText = "Correct! Well done.";
-            feedbackMessage.classList.remove('thinking');
-        }
-
-        // Map local simulation data to new contract (title/description)
-        const mappedSim = currentStepData.simulation.map(s => ({
-            title: s.text || s.title,
-            description: s.sub || s.description,
-            type: "info"
-        }));
-
-        await runSimulation(mappedSim, true);
-        await showRecap(currentStepData.recap);
-
-        setTimeout(() => {
-            currentStepIndex++;
-            if (currentStepIndex < window.STEP_POOL.length) {
-                renderStep();
-            } else {
-                showFinalSuccess();
-            }
-        }, 2000);
-
+        handleSuccessFlow(option, btn);
     } else {
-        // Telemetry: Wrong Answer
-        if (window.logUserAction) {
-            window.logUserAction('wrong_answer', { step: currentStepIndex + 1 });
-        }
-
-        window.anim.shake(btn);
-        btn.classList.add('wrong');
-        btn.innerHTML = `<i class="fas fa-times-circle"></i> <span>${option.text}</span>`;
-        
-        feedbackMessage.innerText = "🤔 Analyzing your choice...";
-        feedbackMessage.className = "feedback-message error thinking";
-
-        // Fetch dynamic failure simulation from backend
-        const failurePrompt = `User selected '${option.text}' for '${currentStepData.question}'. Show the failure simulation.`;
-        const steps = await window.getSteps(failurePrompt);
-
-        await runSimulation(steps, false);
-
-        // Call AI for Dynamic Failure Explanation
-        try {
-            const prompt = `Explain why selecting '${option.text}' is incorrect for the question: '${currentStepData.question}' in the context of Indian elections. Tell me what the correct approach should be.`;
-            const explanation = await window.getExplain(prompt);
-            feedbackMessage.innerText = `❌ ${explanation[0] || "That's not the right way."}`;
-            feedbackMessage.classList.remove('thinking');
-        } catch (e) {
-            feedbackMessage.innerText = "❌ Incorrect. Please try a different approach.";
-            feedbackMessage.classList.remove('thinking');
-        }
-
-        setTimeout(() => {
-            btn.classList.remove('wrong');
-            btn.innerHTML = `<i class="far fa-circle"></i> <span>${option.text}</span>`;
-            buttons.forEach(b => {
-                b.disabled = false;
-                b.style.opacity = "1";
-            });
-            isProcessing = false;
-        }, 3000);
+        handleFailureFlow(option, btn, allButtons);
     }
 }
 
-async function runSimulation(steps, isSuccess) {
-    simulationLog.innerHTML = "";
+/**
+ * Executes correct answer sequence
+ */
+async function handleSuccessFlow(option, btn) {
+    window.anim.pop(btn);
+    btn.classList.add('correct');
+    btn.innerHTML = `<i class="fas fa-check-circle" aria-hidden="true"></i> <span>${option.text}</span>`;
+    
+    elements.feedbackMessage.innerText = "✨ Thinking of an explanation...";
+    elements.feedbackMessage.className = "feedback-message success thinking";
+
+    try {
+        const aiPrompt = `Explain why '${option.text}' is the correct choice for: '${activeStepData.question}' in the Indian election process.`;
+        const explanation = await window.getExplain(aiPrompt);
+        elements.feedbackMessage.innerText = explanation[0] || "Correct choice! Well done.";
+        elements.feedbackMessage.classList.remove('thinking');
+    } catch {
+        elements.feedbackMessage.innerText = "Correct! Proceeding to next step.";
+    }
+
+    await executeSimulation(activeStepData.simulation, true);
+    await displayRecap(activeStepData.recap);
+
+    setTimeout(() => {
+        currentStepIndex++;
+        if (currentStepIndex < window.STEP_POOL.length) {
+            loadNextStepModule();
+        } else {
+            renderFinalCompletion();
+        }
+    }, 2000);
+}
+
+/**
+ * Executes incorrect answer sequence
+ */
+async function handleFailureFlow(option, btn, allButtons) {
+    window.anim.shake(btn);
+    btn.classList.add('wrong');
+    btn.innerHTML = `<i class="fas fa-times-circle" aria-hidden="true"></i> <span>${option.text}</span>`;
+    
+    elements.feedbackMessage.innerText = "🤔 Analyzing outcome...";
+    elements.feedbackMessage.className = "feedback-message error thinking";
+
+    /**
+     * DUAL SIMULATION RESTORATION:
+     * Use predefined failure simulation if available in data.js.
+     * Otherwise, fallback to dynamic AI simulation.
+     */
+    if (option.simulation) {
+        await executeSimulation(option.simulation, false);
+    } else {
+        try {
+            const aiPrompt = `User selected wrong option '${option.text}' for '${activeStepData.question}'. Show failure simulation.`;
+            const steps = await window.getSteps(aiPrompt);
+            await executeSimulation(steps, false);
+        } catch {
+            await executeSimulation([{text: "Invalid Path", sub: "Decision deviates from official protocol"}], false);
+        }
+    }
+
+    try {
+        const aiPrompt = `Explain why selecting '${option.text}' was incorrect for: '${activeStepData.question}'. What is the correct way?`;
+        const explanation = await window.getExplain(aiPrompt);
+        elements.feedbackMessage.innerText = `❌ ${explanation[0] || "Incorrect choice."}`;
+        elements.feedbackMessage.classList.remove('thinking');
+    } catch {
+        elements.feedbackMessage.innerText = "❌ Incorrect approach. Please try again.";
+    }
+
+    // Unlock for retry after a delay
+    setTimeout(() => {
+        btn.classList.remove('wrong');
+        btn.innerHTML = `<i class="far fa-circle"></i> <span>${option.text}</span>`;
+        allButtons.forEach(b => {
+            b.disabled = false;
+            b.style.opacity = "1";
+        });
+        isActionPending = false;
+    }, 3000);
+}
+
+/**
+ * Renders the simulation sequence in the center panel
+ */
+async function executeSimulation(steps, isSuccess) {
+    elements.simulationLog.innerHTML = "";
     if (!steps || steps.length === 0) return;
 
-    for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
-        
-        // Contract alignment: title and description
-        const title = step.title || step.text || "Action";
-        const description = step.description || step.sub || "";
+    for (const step of steps) {
+        // Contract alignment: handles both {text, sub} and {title, description}
+        const mainText = step.text || step.title || "Action";
+        const subText = step.sub || step.description || "";
         const type = step.type || (isSuccess ? "info" : "error");
 
-        const animType = window.anim.getAnimationType(title);
+        const animationType = window.anim.getAnimationType(mainText);
         const card = document.createElement("div");
-        card.className = `step-card anim-${animType} ${type === 'error' ? 'failure' : ''}`;
+        card.className = `step-card anim-${animationType} ${type === 'error' ? 'failure' : ''}`;
         
-        let visual = '';
-        if (animType === 'download') visual = '<div class="sim-progress-bar"><div class="sim-progress-fill"></div></div>';
-        if (animType === 'spinner') visual = `<i class="fas fa-circle-notch fa-spin sim-spinner ${type === 'error' ? 'error' : ''}"></i>`;
-
         card.innerHTML = `
             <div class="step-header ${type === 'error' ? 'error' : ''}">
-                <i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : (animType === 'success-check' ? 'fa-check-circle' : 'fa-cog fa-spin')}"></i>
-                <span>${type === 'error' ? 'FAILURE ALERT' : animType.toUpperCase()}</span>
+                <i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : (animationType === 'success-check' ? 'fa-check-circle' : 'fa-cog fa-spin')}" aria-hidden="true"></i>
+                <span>${type === 'error' ? 'FAILURE ALERT' : animationType.toUpperCase()}</span>
             </div>
-            <div class="step-main-text">${title}</div>
-            <div class="step-sub-text">${description}</div>
-            ${visual}
+            <div class="step-main-text">${mainText}</div>
+            <div class="step-sub-text">${subText}</div>
         `;
         
-        simulationLog.appendChild(card);
+        elements.simulationLog.appendChild(card);
         window.anim.fadeIn(card, 0);
-        simulationLog.scrollTop = simulationLog.scrollHeight;
-        await delay(1200);
+        elements.simulationLog.scrollTop = elements.simulationLog.scrollHeight;
+        await new Promise(r => setTimeout(r, 1200));
     }
 }
 
-async function showRecap(text) {
+/**
+ * Displays a summary recap card
+ */
+async function displayRecap(text) {
     const recap = document.createElement("div");
     recap.className = "recap-card";
     recap.innerHTML = `<strong>💡 Mentor Insight:</strong><br>${text}`;
-    simulationLog.appendChild(recap);
-    simulationLog.scrollTop = simulationLog.scrollHeight;
-    await delay(500);
+    elements.simulationLog.appendChild(recap);
+    elements.simulationLog.scrollTop = elements.simulationLog.scrollHeight;
 }
 
-async function showFinalSuccess() {
-    progressBar.style.width = "100%";
-    appContainer.classList.add('completed-mode');
-    simulationLog.innerHTML = "";
+/**
+ * Renders the final celebratory completion screen
+ */
+async function renderFinalCompletion() {
+    elements.progressBar.style.width = "100%";
+    elements.appContainer.classList.add('completed-mode');
+    elements.simulationLog.innerHTML = "";
 
-    // Telemetry: Journey Completed
-    if (window.logUserAction) {
-        window.logUserAction('journey_completed');
-    }
+    if (window.logUserAction) window.logUserAction('journey_finish');
+    if (window.saveSessionSummary) await window.saveSessionSummary();
 
     const overlay = document.createElement("div");
     overlay.className = "completion-overlay";
@@ -238,25 +258,21 @@ async function showFinalSuccess() {
         <div class="glow-bg"></div>
         <div class="content">
             <h1>🎉 Journey Complete!</h1>
-            <p>You've mastered the essentials of the election process. You're now ready to make a difference!</p>
-            <button id="restart-btn" class="restart-btn">Restart Journey</button>
+            <p>You've mastered the Election Essentials. Ready to vote!</p>
+            <button id="restart-btn" class="restart-btn" aria-label="Restart the learning journey">Restart Journey</button>
         </div>
     `;
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('active'), 100);
 
     document.getElementById("restart-btn").onclick = () => {
-        appContainer.classList.remove('completed-mode');
-        overlay.remove();
-        currentStepIndex = 0;
-        renderStep();
+        elements.appContainer.classList.remove('completed-mode');
+        window.location.reload();
     };
 
-    const msgId = window.chat.addMessage("...", "ai");
-    await window.chat.typeMessage(msgId, "Congratulations! You've navigated the complexities of registration and voting. Your voice is your power!");
+    const finalMsgId = window.chat.addMessage("...", "ai");
+    await window.chat.typeMessage(finalMsgId, "Congratulations! You've successfully navigated the Indian election process. Your participation is what makes democracy strong!");
 }
 
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
 // Initialize when DOM ready
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", initializeApp);
